@@ -24,17 +24,17 @@ func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		ctx.AbortWithError(http.StatusBadRequest, err)
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 	}
 
 	loggedInUser, err := h.userUsecase.Login(payload)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, err.Error())
+		helpers.FailResponse(ctx, http.StatusUnauthorized, err.Error())
 		return
 	}
 
 	token := helpers.GenerateToken(loggedInUser.ID, loggedInUser.Email)
-	ctx.JSON(http.StatusOK, gin.H{
+	helpers.SuccessResponse(ctx, http.StatusOK, gin.H{
 		"access_token": token,
 	})
 }
@@ -45,17 +45,17 @@ func (h *userHandler) PostUserRegisterHandler(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		ctx.AbortWithError(http.StatusBadRequest, err)
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	newUser, err := h.userUsecase.Register(payload)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err.Error())
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{
+	helpers.SuccessResponse(ctx, http.StatusOK, gin.H{
 		"id":       newUser.ID,
 		"email":    newUser.Email,
 		"username": newUser.Username,

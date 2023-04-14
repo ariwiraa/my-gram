@@ -13,10 +13,7 @@ func Authentication() gin.HandlerFunc {
 		_ = verifyToken
 
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "Unauthorized",
-				"message": err.Error(),
-			})
+			helpers.FailResponse(c, http.StatusUnauthorized, err.Error())
 			return
 		}
 		// menyimpan claim dari token

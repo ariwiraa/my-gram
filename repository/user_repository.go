@@ -29,7 +29,8 @@ func (r *userRepository) IsUsernameExists(username string) error {
 // IsEmailExist implements UserRepository
 func (r *userRepository) FindByEmail(email string) (domain.User, error) {
 	var user domain.User
-	err := r.db.Debug().Where("email = ?", email).Find(&user).Error
+	// err := r.db.Debug().Where("email = ?", email).Find(&user).Error
+	err := r.db.Debug().First(&user, "email = ?", email).Error
 	if err != nil {
 		return user, err
 	}
