@@ -23,6 +23,17 @@ type socialMediaHandler struct {
 	socialMediaUsecase usecase.SocialMediaUsecase
 }
 
+// DeleteSocialMedia godoc
+// @Summary Delete social media identified by the given id
+// @Description Delete the social media corresponding to the input Id
+// @Tags social media
+// @Accept json
+// @Produce json
+// @Param id path int true "ID of the book to be deleted"
+// @Success 200 {object} helpers.SuccessResult{data=domain.SocialMedia,code=int,message=string}
+// @Failure 400 {object} helpers.BadRequest{code=int,message=string}
+// @Success 500 {object} helpers.InternalServerError{code=int,message=string}
+// @Router /socialmedia/{id} [delete]
 // DeleteSocialMediaHandler implements SocialMediaHandler
 func (h *socialMediaHandler) DeleteSocialMediaHandler(ctx *gin.Context) {
 	var socialMedia domain.SocialMedia
@@ -34,6 +45,17 @@ func (h *socialMediaHandler) DeleteSocialMediaHandler(ctx *gin.Context) {
 	helpers.SuccessResponse(ctx, http.StatusOK, nil)
 }
 
+// GetSocialMedia godoc
+// @Summary Get Details for a given id
+// @Description Get details of social media corresponding is the input Id
+// @Tags social media
+// @Accept json
+// @Produce json
+// @Param id path int true "ID of the social media"
+// @Success 200 {object} helpers.SuccessResult{data=domain.SocialMedia,code=int,message=string}
+// @Failure 400 {object} helpers.BadRequest{code=int,message=string}
+// @Success 500 {object} helpers.InternalServerError{code=int,message=string}
+// @Router /socialmedia/{id} [get]
 // GetSocialMediaHandler implements SocialMediaHandler
 func (h *socialMediaHandler) GetSocialMediaHandler(ctx *gin.Context) {
 	requestParam := ctx.Param("id")
@@ -48,6 +70,16 @@ func (h *socialMediaHandler) GetSocialMediaHandler(ctx *gin.Context) {
 
 }
 
+// GetSocialMedias godoc
+// @Summary Get All social medias
+// @Description Get All social medias
+// @Tags social media
+// @Accept json
+// @Produce json
+// @Success 200 {object} helpers.SuccessResult{data=domain.SocialMedia,code=int,message=string}
+// @Failure 400 {object} helpers.BadRequest{code=int,message=string}
+// @Success 500 {object} helpers.InternalServerError{code=int,message=string}
+// @Router /socialmedia [get]
 // GetSocialMediasHandler implements SocialMediaHandler
 func (h *socialMediaHandler) GetSocialMediasHandler(ctx *gin.Context) {
 	socialMedias, err := h.socialMediaUsecase.GetAll()
@@ -92,6 +124,18 @@ func (h *socialMediaHandler) PostSocialMediaHandler(ctx *gin.Context) {
 
 }
 
+// UpdateSocialMedia godoc
+// @Summary Put Details
+// @Description Put details of social media
+// @Tags social media
+// @Accept json
+// @Produce json
+// @Param id path int true "ID of the social media"
+// @Param socialMedia body domain.SocialMediaRequest true "create social media"
+// @Success 200 {object} helpers.SuccessResult{data=domain.SocialMedia,code=int,message=string}
+// @Failure 400 {object} helpers.BadRequest{code=int,message=string}
+// @Success 500 {object} helpers.InternalServerError{code=int,message=string}
+// @Router /socialmedia/{id} [put]
 // PutSocialMediaHandler implements SocialMediaHandler
 func (h *socialMediaHandler) PutSocialMediaHandler(ctx *gin.Context) {
 	requestParam := ctx.Param("id")
