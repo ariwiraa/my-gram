@@ -46,7 +46,7 @@ func (r *socialMediaRepository) Delete(id uint) {
 func (r *socialMediaRepository) FindAll() ([]domain.SocialMedia, error) {
 	var socialMedias []domain.SocialMedia
 
-	err := r.db.Debug().Preload("User").Find(&socialMedias).Error
+	err := r.db.Debug().Find(&socialMedias).Error
 	if err != nil {
 		log.Fatal("error getting all social medias data: ", err)
 	}
@@ -56,7 +56,7 @@ func (r *socialMediaRepository) FindAll() ([]domain.SocialMedia, error) {
 // FindById implements SocialMediaRepository
 func (r *socialMediaRepository) FindById(id uint) (domain.SocialMedia, error) {
 	var socialMedia domain.SocialMedia
-	err := r.db.Debug().Preload("User").First(&socialMedia, "id = ?", id).Error
+	err := r.db.Debug().First(&socialMedia, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Fatal("social media not found")

@@ -9,16 +9,16 @@ import (
 
 type SocialMedia struct {
 	ID             uint   `gorm:"primaryKey" json:"id"`
-	Name           string `gorm:"not null" valid:"required~your name is required" json:"name"`
-	SocialMediaUrl string `gorm:"not null" valid:"required~your socialmedia is required" json:"social_media_url"`
+	Name           string `gorm:"not null" json:"name"`
+	SocialMediaUrl string `gorm:"not null" json:"social_media_url"`
 	UserId         uint
 	CreatedAt      *time.Time
 	UpdatedAt      *time.Time
 }
 
 type SocialMediaRequest struct {
-	Name           string `gorm:"not null" valid:"required~your name is required" json:"name"`
-	SocialMediaUrl string `gorm:"not null" valid:"required~your socialmedia is required" json:"social_media_url"`
+	Name           string `json:"name"`
+	SocialMediaUrl string `json:"social_media_url"`
 }
 
 func (s *SocialMedia) BeforeCreate(tx *gorm.DB) (err error) {
