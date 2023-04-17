@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"log"
 
 	"github.com/ariwiraa/my-gram/config"
@@ -12,6 +13,7 @@ import (
 )
 
 func main() {
+	port := os.getenv("APP_PORT")
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("gagal mengambil .env %v", err)
@@ -36,5 +38,5 @@ func main() {
 
 	router := routes.NewRouter(userHandler, photoHandler, socialMediaHandler, commentHandler)
 
-	router.Run(":8080")
+	router.Run(":" + port)
 }
