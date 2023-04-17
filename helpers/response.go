@@ -6,26 +6,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type SuccesResult struct {
+type SuccessResult struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
 }
 
-type BadRequestResult struct {
+type BadRequest struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
 }
 
-type InteralServerError struct {
+type InternalServerError struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
 }
 
 func SuccessResponse(ctx *gin.Context, code int, data interface{}) {
-	ctx.JSON(code, SuccesResult{
+	ctx.JSON(code, SuccessResult{
 		Code:    code,
 		Message: "success",
 		Data:    data,
@@ -34,7 +34,7 @@ func SuccessResponse(ctx *gin.Context, code int, data interface{}) {
 
 func FailResponse(ctx *gin.Context, code int, message string) {
 	if code == http.StatusInternalServerError {
-		ctx.JSON(code, InteralServerError{
+		ctx.JSON(code, InternalServerError{
 			Code:    code,
 			Message: message,
 			Data:    nil,
@@ -42,7 +42,7 @@ func FailResponse(ctx *gin.Context, code int, message string) {
 		return
 	}
 
-	ctx.JSON(code, BadRequestResult{
+	ctx.JSON(code, BadRequest{
 		Code:    code,
 		Message: message,
 		Data:    nil,

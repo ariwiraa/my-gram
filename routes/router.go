@@ -4,6 +4,7 @@ import (
 	"github.com/ariwiraa/my-gram/handler"
 	"github.com/ariwiraa/my-gram/middlewares"
 	"github.com/gin-gonic/gin"
+	_"github.com/ariwiraa/my-gram/docs"
 
 	ginSwagger "github.com/swaggo/gin-swagger"
 
@@ -19,6 +20,10 @@ import (
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost:8080
+// @securitydefinitions.apikey  JWT
+// @in                          header
+// @name                        Authorization
+// @description	How to input in swagger : 'Bearer <insert_your_token_here>'
 func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandler, socialMediaHandler handler.SocialMediaHandler, commentHandler handler.CommentHandler) *gin.Engine {
 	router := gin.Default()
 

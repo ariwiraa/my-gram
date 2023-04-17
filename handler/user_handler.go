@@ -18,6 +18,17 @@ type userHandler struct {
 	userUsecase usecase.UserUsecase
 }
 
+// UserLogin godoc
+// @Summary User Login
+// @Description user logs in
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param login body domain.UserLogin true "logged in"
+// @Success 200 {object} helpers.SuccessResult{data=string,code=int,message=string}
+// @Failure 400 {object} helpers.BadRequest{code=int,message=string}
+// @Success 500 {object} helpers.InternalServerError{code=int,message=string}
+// @Router /signin [post]
 // PostUserLoginHandler implements UserHandler
 func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
 	var payload domain.UserLogin
@@ -39,6 +50,17 @@ func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
 	})
 }
 
+// UserRegister godoc
+// @Summary User Register
+// @Description user registers in the form provided
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param register body domain.UserRequest true "create account"
+// @Success 200 {object} helpers.SuccessResult{data=domain.User,code=int,message=string}
+// @Failure 400 {object} helpers.BadRequest{code=int,message=string}
+// @Success 500 {object} helpers.InternalServerError{code=int,message=string}
+// @Router /signup [post]
 // PostUserRegisterHandler implements UserHandler
 func (h *userHandler) PostUserRegisterHandler(ctx *gin.Context) {
 	var payload domain.UserRequest

@@ -29,7 +29,8 @@ type socialMediaHandler struct {
 // @Tags social media
 // @Accept json
 // @Produce json
-// @Param id path int true "ID of the book to be deleted"
+// @Param id path int true "ID of the social media to be deleted"
+// @Security JWT
 // @Success 200 {object} helpers.SuccessResult{data=domain.SocialMedia,code=int,message=string}
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
 // @Success 500 {object} helpers.InternalServerError{code=int,message=string}
@@ -76,6 +77,7 @@ func (h *socialMediaHandler) GetSocialMediaHandler(ctx *gin.Context) {
 // @Tags social media
 // @Accept json
 // @Produce json
+// @Security JWT
 // @Success 200 {object} helpers.SuccessResult{data=domain.SocialMedia,code=int,message=string}
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
 // @Success 500 {object} helpers.InternalServerError{code=int,message=string}
@@ -97,6 +99,7 @@ func (h *socialMediaHandler) GetSocialMediasHandler(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param socialMedia body domain.SocialMediaRequest true "create social media"
+// @Security JWT
 // @Success 200 {object} helpers.SuccessResult{data=domain.SocialMedia,code=int,message=string}
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
 // @Success 500 {object} helpers.InternalServerError{code=int,message=string}
@@ -131,7 +134,8 @@ func (h *socialMediaHandler) PostSocialMediaHandler(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID of the social media"
-// @Param socialMedia body domain.SocialMediaRequest true "create social media"
+// @Param socialMedia body domain.SocialMediaRequest true "update social media"
+// @Security JWT
 // @Success 200 {object} helpers.SuccessResult{data=domain.SocialMedia,code=int,message=string}
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
 // @Success 500 {object} helpers.InternalServerError{code=int,message=string}
