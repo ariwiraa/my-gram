@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	port := os.getenv("APP_PORT")
+	port := os.Getenv("APP_PORT")
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("gagal mengambil .env %v", err)
