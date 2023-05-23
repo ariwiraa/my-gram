@@ -8,22 +8,40 @@ import (
 type UserRepository interface {
 	AddUser(user domain.User) (domain.User, error)
 	FindByEmail(email string) (domain.User, error)
-	IsUsernameExists(username string) error
+	IsUsernameExists(username string) (bool, error)
+	IsEmailExists(email string) (bool, error)
 }
 
 type userRepository struct {
 	db *gorm.DB
 }
 
-// IsUsernameExists implements UserRepository
-func (r *userRepository) IsUsernameExists(username string) error {
+// IsEmailExists implements UserRepository
+func (r *userRepository) IsEmailExists(email string) (bool, error) {
 	var user domain.User
-	err := r.db.Debug().Select("id", "username").Where("username = ?", username).First(&user).Error
+	err := r.db.Debug().Where("email = ?", email).First(&user).Error
 	if err != nil {
-		return err
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+		return false, err
 	}
 
-	return nil
+	return true, nil
+}
+
+// IsUsernameExists implements UserRepository
+func (r *userRepository) IsUsernameExists(username string) (bool, error) {
+	var user domain.User
+	err := r.db.Debug().Where("username = ?", username).First(&user).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }
 
 // IsEmailExist implements UserRepository
