@@ -3,10 +3,11 @@ package handler
 import (
 	"net/http"
 
-	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type UserHandler interface {
@@ -16,6 +17,7 @@ type UserHandler interface {
 
 type userHandler struct {
 	userUsecase usecase.UserUsecase
+	validate    *validator.Validate
 }
 
 // UserLogin godoc
@@ -24,14 +26,14 @@ type userHandler struct {
 // @Tags user
 // @Accept json
 // @Produce json
-// @Param login body domain.UserLogin true "logged in"
+// @Param login body dtos.UserLogin true "logged in"
 // @Success 200 {object} helpers.SuccessResult{data=string,code=int,message=string}
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
 // @Success 500 {object} helpers.InternalServerError{code=int,message=string}
 // @Router /signin [post]
 // PostUserLoginHandler implements UserHandler
 func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
-	var payload domain.UserLogin
+	var payload dtos.UserLogin
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
@@ -56,18 +58,25 @@ func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
 // @Tags user
 // @Accept json
 // @Produce json
-// @Param register body domain.UserRequest true "create account"
+// @Param register body dtos.UserRequest true "create account"
 // @Success 200 {object} helpers.SuccessResult{data=domain.User,code=int,message=string}
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
 // @Success 500 {object} helpers.InternalServerError{code=int,message=string}
 // @Router /signup [post]
 // PostUserRegisterHandler implements UserHandler
 func (h *userHandler) PostUserRegisterHandler(ctx *gin.Context) {
-	var payload domain.UserRequest
+	var payload dtos.UserRequest
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = h.validate.Struct(payload)
+	if err != nil {
+		errorMessage := helpers.FormatValidationErrors(err)
+		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
 		return
 	}
 
@@ -84,6 +93,6 @@ func (h *userHandler) PostUserRegisterHandler(ctx *gin.Context) {
 	})
 }
 
-func NewUserHandler(userUsecase usecase.UserUsecase) UserHandler {
-	return &userHandler{userUsecase: userUsecase}
+func NewUserHandler(userUsecase usecase.UserUsecase, validate *validator.Validate) UserHandler {
+	return &userHandler{userUsecase: userUsecase, validate: validate}
 }

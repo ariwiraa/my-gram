@@ -2,13 +2,14 @@ package usecase
 
 import (
 	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/repository"
 )
 
 type UserUsecase interface {
-	Register(payload domain.UserRequest) (domain.User, error)
-	Login(payload domain.UserLogin) (domain.User, error)
+	Register(payload dtos.UserRequest) (domain.User, error)
+	Login(payload dtos.UserLogin) (domain.User, error)
 }
 
 type userUsecase struct {
@@ -16,8 +17,8 @@ type userUsecase struct {
 }
 
 // Login implements UserUsecase
-func (u *userUsecase) Login(payload domain.UserLogin) (domain.User, error) {
-	email := payload.Email
+func (u *userUsecase) Login(payload dtos.UserLogin) (domain.User, error) {
+	email := payload.Username
 	password := payload.Password
 
 	user, err := u.userRepository.FindByEmail(email)
@@ -38,13 +39,13 @@ func (u *userUsecase) Login(payload domain.UserLogin) (domain.User, error) {
 }
 
 // Register implements UserUsecase
-func (u *userUsecase) Register(payload domain.UserRequest) (domain.User, error) {
+func (u *userUsecase) Register(payload dtos.UserRequest) (domain.User, error) {
+	hashingPassword := helpers.HashPass(payload.Password)
 
 	user := domain.User{
 		Username: payload.Username,
 		Email:    payload.Email,
-		Password: payload.Password,
-		Age:      payload.Age,
+		Password: hashingPassword,
 	}
 
 	newUser, err := u.userRepository.AddUser(user)
@@ -56,5 +57,7 @@ func (u *userUsecase) Register(payload domain.UserRequest) (domain.User, error) 
 }
 
 func NewUserUsecase(userRepository repository.UserRepository) UserUsecase {
-	return &userUsecase{userRepository: userRepository}
+	return &userUsecase{
+		userRepository: userRepository,
+	}
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"log"
 
 	"github.com/ariwiraa/my-gram/config"
@@ -9,20 +8,22 @@ import (
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/routes"
 	"github.com/ariwiraa/my-gram/usecase"
+	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	port := os.Getenv("APP_PORT")
+	// port := os.Getenv("APP_PORT")
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("gagal mengambil .env %v", err)
 	}
 
 	db := config.InitializeDB()
+	validate := validator.New()
 	userRepository := repository.NewUserRepository(db)
 	userUseCase := usecase.NewUserUsecase(userRepository)
-	userHandler := handler.NewUserHandler(userUseCase)
+	userHandler := handler.NewUserHandler(userUseCase, validate)
 
 	photoRepository := repository.NewPhotoRepository(db)
 	photoUsecase := usecase.NewPhotoUsecase(photoRepository)
@@ -38,5 +39,5 @@ func main() {
 
 	router := routes.NewRouter(userHandler, photoHandler, socialMediaHandler, commentHandler)
 
-	router.Run(":" + port)
+	router.Run(":8080")
 }
