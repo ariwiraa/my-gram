@@ -2,7 +2,6 @@ package repository
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/ariwiraa/my-gram/domain"
@@ -86,8 +85,6 @@ func (r *photoRepository) Update(photo domain.Photo, id uint) (domain.Photo, err
 	if err != nil {
 		return photo, err
 	}
-
-	fmt.Println("repo", photo)
 
 	return photo, nil
 }

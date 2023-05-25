@@ -1,14 +1,17 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type PhotoHandler interface {
@@ -21,6 +24,7 @@ type PhotoHandler interface {
 
 type photoHandler struct {
 	photoUsecase usecase.PhotoUsecase
+	validate     *validator.Validate
 }
 
 // Deletephoto godoc
@@ -45,7 +49,6 @@ func (h *photoHandler) DeletePhotoHandler(ctx *gin.Context) {
 	h.photoUsecase.Delete(photo)
 	helpers.SuccessResponse(ctx, http.StatusOK, nil)
 }
-
 
 // Getphoto godoc
 // @Summary Get Details for a given id
@@ -101,7 +104,7 @@ func (h *photoHandler) GetPhotosHandler(ctx *gin.Context) {
 // @Tags photo
 // @Accept json
 // @Produce json
-// @Param photo body domain.PhotoRequest true "create photo"
+// @Param photo body dtos.PhotoRequest true "create photo"
 // @Security JWT
 // @Success 200 {object} helpers.SuccessResult{data=domain.Photo,code=int,message=string}
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
@@ -109,18 +112,44 @@ func (h *photoHandler) GetPhotosHandler(ctx *gin.Context) {
 // @Router /photo [post]
 // PostPhotoHandler implements PhotoHandler
 func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
-	var payload domain.PhotoRequest
+	var payload dtos.PhotoRequest
 
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userID := uint(userData["id"].(float64))
 
-	err := ctx.ShouldBindJSON(&payload)
+	// ambil data dari formdata
+	payload.Caption = ctx.PostForm("caption")
+	// err := ctx.ShouldBind(&payload)
+	// if err != nil {
+	// 	helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+	// 	return
+	// }
+
+	// err = h.validate.Struct(payload)
+	// if err != nil {
+	// 	errorMessage := helpers.FormatValidationErrors(err)
+	// 	helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
+	// 	return
+	// }
+
+	// ambil file yang diupload
+	file, err := ctx.FormFile("photo_url")
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, "gagal mengambil file")
+		return
+	}
+
+	//tentukan destinasi penyimpanan file
+	path := fmt.Sprintf("images/%d-%s", userID, file.Filename)
+
+	//save file yang diupload
+	err = ctx.SaveUploadedFile(file, path)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	photo, err := h.photoUsecase.Create(payload, userID)
+	photo, err := h.photoUsecase.Create(payload, userID, path)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -136,7 +165,7 @@ func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
 // @Tags photo
 // @Accept json
 // @Produce json
-// @Param photo body domain.PhotoRequest true "create photo"
+// @Param photo body dtos.PhotoRequest true "create photo"
 // @Param id path int true "ID of the photo"
 // @Security JWT
 // @Success 200 {object} helpers.SuccessResult{data=domain.Photo,code=int,message=string}
@@ -151,7 +180,7 @@ func (h *photoHandler) PutPhotoHandler(ctx *gin.Context) {
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userID := uint(userData["id"].(float64))
 
-	var payload domain.PhotoRequest
+	var payload dtos.PhotoRequest
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
@@ -168,6 +197,6 @@ func (h *photoHandler) PutPhotoHandler(ctx *gin.Context) {
 
 }
 
-func NewPhotoHandler(photoUsecase usecase.PhotoUsecase) PhotoHandler {
-	return &photoHandler{photoUsecase: photoUsecase}
+func NewPhotoHandler(photoUsecase usecase.PhotoUsecase, validate *validator.Validate) PhotoHandler {
+	return &photoHandler{photoUsecase: photoUsecase, validate: validate}
 }

@@ -7,7 +7,7 @@ import (
 
 type UserRepository interface {
 	AddUser(user domain.User) (domain.User, error)
-	FindByEmail(email string) (domain.User, error)
+	FindByUsername(username string) (domain.User, error)
 	IsUsernameExists(username string) (bool, error)
 	IsEmailExists(email string) (bool, error)
 }
@@ -45,10 +45,10 @@ func (r *userRepository) IsUsernameExists(username string) (bool, error) {
 }
 
 // IsEmailExist implements UserRepository
-func (r *userRepository) FindByEmail(email string) (domain.User, error) {
+func (r *userRepository) FindByUsername(username string) (domain.User, error) {
 	var user domain.User
-	// err := r.db.Debug().Where("email = ?", email).Find(&user).Error
-	err := r.db.Debug().First(&user, "email = ?", email).Error
+	// err := r.db.Debug().Where("username = ?", username).Find(&user).Error
+	err := r.db.Debug().First(&user, "username = ?", username).Error
 	if err != nil {
 		return user, err
 	}

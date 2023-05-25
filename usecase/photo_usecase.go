@@ -2,14 +2,15 @@ package usecase
 
 import (
 	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/repository"
 )
 
 type PhotoUsecase interface {
-	Create(payload domain.PhotoRequest, userId uint) (domain.Photo, error)
+	Create(payload dtos.PhotoRequest, userId uint, fileLocation string) (domain.Photo, error)
 	GetById(id uint) (domain.Photo, error)
 	GetAll() ([]domain.Photo, error)
-	Update(payload domain.PhotoRequest, id uint, userId uint) (domain.Photo, error)
+	Update(payload dtos.PhotoRequest, id uint, userId uint) (domain.Photo, error)
 	Delete(photo domain.Photo)
 }
 
@@ -18,11 +19,10 @@ type photoUsecase struct {
 }
 
 // Create implements PhotoUsecase
-func (u *photoUsecase) Create(payload domain.PhotoRequest, userId uint) (domain.Photo, error) {
+func (u *photoUsecase) Create(payload dtos.PhotoRequest, userId uint, fileLocation string) (domain.Photo, error) {
 	photo := domain.Photo{
-		Title:    payload.Title,
 		Caption:  payload.Caption,
-		PhotoUrl: payload.PhotoUrl,
+		PhotoUrl: fileLocation,
 		UserId:   userId,
 	}
 
@@ -60,17 +60,14 @@ func (u *photoUsecase) GetById(id uint) (domain.Photo, error) {
 }
 
 // Update implements PhotoUsecase
-func (u *photoUsecase) Update(payload domain.PhotoRequest, id uint, userId uint) (domain.Photo, error) {
+func (u *photoUsecase) Update(payload dtos.PhotoRequest, id uint, userId uint) (domain.Photo, error) {
 	photo, err := u.photoRepository.FindById(id)
 	if err != nil {
 		panic(err)
 	}
 
-	// var photo domain.Photo
-
-	photo.Title = payload.Title
 	photo.Caption = payload.Caption
-	photo.PhotoUrl = payload.PhotoUrl
+	// photo.PhotoUrl = payload.PhotoUrl
 	photo.UserId = userId
 
 	updatedPhoto, err := u.photoRepository.Update(photo, id)

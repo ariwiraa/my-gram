@@ -20,10 +20,10 @@ type userUsecase struct {
 
 // Login implements UserUsecase
 func (u *userUsecase) Login(payload dtos.UserLogin) (domain.User, error) {
-	email := payload.Username
+	username := payload.Username
 	password := payload.Password
 
-	user, err := u.userRepository.FindByEmail(email)
+	user, err := u.userRepository.FindByUsername(username)
 	if err != nil {
 		return user, err
 	}

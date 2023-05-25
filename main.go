@@ -27,7 +27,7 @@ func main() {
 
 	photoRepository := repository.NewPhotoRepository(db)
 	photoUsecase := usecase.NewPhotoUsecase(photoRepository)
-	photoHandler := handler.NewPhotoHandler(photoUsecase)
+	photoHandler := handler.NewPhotoHandler(photoUsecase, validate)
 
 	socialMediaRepository := repository.NewSocialMediaRepository(db)
 	socialMediaUsecase := usecase.NewSocialMediaUsecase(socialMediaRepository)

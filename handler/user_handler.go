@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/ariwiraa/my-gram/domain/dtos"
@@ -34,6 +35,7 @@ type userHandler struct {
 // PostUserLoginHandler implements UserHandler
 func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
 	var payload dtos.UserLogin
+	fmt.Println(payload)
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
