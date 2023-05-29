@@ -5,10 +5,12 @@ import (
 	"strconv"
 
 	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type CommentHandler interface {
@@ -21,6 +23,7 @@ type CommentHandler interface {
 
 type commentHandler struct {
 	commentUsecase usecase.CommentUsecase
+	validate       *validator.Validate
 }
 
 // DeleteComment godoc
@@ -99,7 +102,7 @@ func (h *commentHandler) GetCommentsHandler(ctx *gin.Context) {
 // @Tags comment
 // @Accept json
 // @Produce json
-// @Param comment body domain.CommentRequest true "create comment"
+// @Param comment body dtos.CommentRequest true "create comment"
 // @Security JWT
 // @Success 200 {object} helpers.SuccessResult{data=domain.Comment,code=int,message=string}
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
@@ -107,7 +110,7 @@ func (h *commentHandler) GetCommentsHandler(ctx *gin.Context) {
 // @Router /comment [post]
 // PostCommentHandler implements CommentHandler
 func (h *commentHandler) PostCommentHandler(ctx *gin.Context) {
-	var payload domain.CommentRequest
+	var payload dtos.CommentRequest
 
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userID := uint(userData["id"].(float64))
@@ -115,6 +118,13 @@ func (h *commentHandler) PostCommentHandler(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = h.validate.Struct(payload)
+	if err != nil {
+		errorMessage := helpers.FormatValidationErrors(err)
+		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
 		return
 	}
 
@@ -134,7 +144,7 @@ func (h *commentHandler) PostCommentHandler(ctx *gin.Context) {
 // @Tags comment
 // @Accept json
 // @Produce json
-// @Param comment body domain.CommentRequest true "create comment"
+// @Param comment body dtos.CommentRequest true "create comment"
 // @Param id path int true "ID of the comment"
 // @Security JWT
 // @Success 200 {object} helpers.SuccessResult{data=domain.Comment,code=int,message=string}
@@ -149,10 +159,17 @@ func (h *commentHandler) PutCommentHandler(ctx *gin.Context) {
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userID := uint(userData["id"].(float64))
 
-	var payload domain.CommentRequest
+	var payload dtos.CommentRequest
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = h.validate.Struct(payload)
+	if err != nil {
+		errorMessage := helpers.FormatValidationErrors(err)
+		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
 		return
 	}
 
@@ -166,6 +183,6 @@ func (h *commentHandler) PutCommentHandler(ctx *gin.Context) {
 
 }
 
-func NewCommentHandler(commentUsecase usecase.CommentUsecase) CommentHandler {
-	return &commentHandler{commentUsecase: commentUsecase}
+func NewCommentHandler(commentUsecase usecase.CommentUsecase, validate *validator.Validate) CommentHandler {
+	return &commentHandler{commentUsecase: commentUsecase, validate: validate}
 }

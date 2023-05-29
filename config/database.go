@@ -26,7 +26,7 @@ func InitializeDB() *gorm.DB {
 		log.Println("Successfully connected to database")
 	}
 
-	db.AutoMigrate(&domain.User{}, &domain.Photo{}, &domain.SocialMedia{}, &domain.Comment{})
+	db.AutoMigrate(&domain.User{}, &domain.Photo{}, &domain.Comment{})
 
 	return db
 }

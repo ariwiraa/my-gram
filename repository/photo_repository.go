@@ -67,7 +67,8 @@ func (r *photoRepository) FindAll() ([]domain.Photo, error) {
 // FindById implements PhotoRepository
 func (r *photoRepository) FindById(id uint) (domain.Photo, error) {
 	var photo domain.Photo
-	err := r.db.Debug().First(&photo, "id = ?", id).Error
+	// fungsi didalam preload digunakan untuk memilih field dari table comment yang akan dijadikan response
+	err := r.db.Debug().Preload("Comments").First(&photo, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Fatal("social media not found")

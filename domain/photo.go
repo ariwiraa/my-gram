@@ -12,5 +12,6 @@ type Photo struct {
 	UserId    uint
 	CreatedAt *time.Time
 	UpdatedAt *time.Time
-	User      *User `json:"user"`
+	User      *User     `json:"user"`
+	Comments  []Comment `gorm:"foreignKey:PhotoId" json:"comments"`
 }

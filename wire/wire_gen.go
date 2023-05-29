@@ -4,7 +4,7 @@
 //go:build !wireinject
 // +build !wireinject
 
-package injector
+package di
 
 import (
 	"github.com/ariwiraa/my-gram/config"
@@ -37,10 +37,21 @@ func initializedPhotoHandler() handler.PhotoHandler {
 	return photoHandler
 }
 
+func initializedCommentHandler() handler.CommentHandler {
+	db := config.InitializeDB()
+	commentRepository := repository.NewCommentRepository(db)
+	photoRepository := repository.NewPhotoRepository(db)
+	commentUsecase := usecase.NewCommentUsecase(commentRepository, photoRepository)
+	validate := validator.New()
+	commentHandler := handler.NewCommentHandler(commentUsecase, validate)
+	return commentHandler
+}
+
 func InitializedServer() *gin.Engine {
 	userHandler := initializedUserHandler()
 	photoHandler := initializedPhotoHandler()
-	engine := routes.NewRouter(userHandler, photoHandler)
+	commentHandler := initializedCommentHandler()
+	engine := routes.NewRouter(userHandler, photoHandler, commentHandler)
 	return engine
 }
 
@@ -49,3 +60,5 @@ func InitializedServer() *gin.Engine {
 var userSet = wire.NewSet(repository.NewUserRepository, usecase.NewUserUsecase, handler.NewUserHandler)
 
 var photoSet = wire.NewSet(repository.NewPhotoRepository, usecase.NewPhotoUsecase, handler.NewPhotoHandler)
+
+var commentSet = wire.NewSet(repository.NewCommentRepository, repository.NewPhotoRepository, usecase.NewCommentUsecase, handler.NewCommentHandler)

@@ -24,7 +24,7 @@ import (
 // @in                          header
 // @name                        Authorization
 // @description	How to input in swagger : 'Bearer <insert_your_token_here>'
-func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandler) *gin.Engine {
+func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandler, commentHandler handler.CommentHandler) *gin.Engine {
 	router := gin.Default()
 
 	router.POST("/signup", userHandler.PostUserRegisterHandler)
@@ -41,25 +41,15 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 		photo.DELETE("/:id", middlewares.PhotoAuthorization(), photoHandler.DeletePhotoHandler)
 	}
 
-	// socialMedia := router.Group("/socialmedia")
-	// {
-	// 	socialMedia.Use(middlewares.Authentication())
-	// 	socialMedia.POST("", socialMediaHandler.PostSocialMediaHandler)
-	// 	socialMedia.GET("", socialMediaHandler.GetSocialMediasHandler)
-	// 	socialMedia.GET("/:id", socialMediaHandler.GetSocialMediaHandler)
-	// 	socialMedia.PUT("/:id", middlewares.SocialMediaAuthorization(), socialMediaHandler.PutSocialMediaHandler)
-	// 	socialMedia.DELETE("/:id", middlewares.SocialMediaAuthorization(), socialMediaHandler.DeleteSocialMediaHandler)
-	// }
-
-	// comment := router.Group("/comment")
-	// {
-	// 	comment.Use(middlewares.Authentication())
-	// 	comment.POST("", commentHandler.PostCommentHandler)
-	// 	comment.GET("", commentHandler.GetCommentsHandler)
-	// 	comment.GET("/:id", commentHandler.GetCommentHandler)
-	// 	comment.PUT("/:id", middlewares.CommentAuthorization(), commentHandler.PutCommentHandler)
-	// 	comment.DELETE("/:id", middlewares.CommentAuthorization(), commentHandler.DeleteCommentHandler)
-	// }
+	comment := router.Group("/comment")
+	{
+		comment.Use(middlewares.Authentication())
+		comment.POST("", commentHandler.PostCommentHandler)
+		comment.GET("", commentHandler.GetCommentsHandler)
+		comment.GET("/:id", commentHandler.GetCommentHandler)
+		comment.PUT("/:id", middlewares.CommentAuthorization(), commentHandler.PutCommentHandler)
+		comment.DELETE("/:id", middlewares.CommentAuthorization(), commentHandler.DeleteCommentHandler)
+	}
 
 	return router
 }

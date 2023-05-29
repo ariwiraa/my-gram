@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/ariwiraa/my-gram/injector"
+	di "github.com/ariwiraa/my-gram/wire"
 	"github.com/joho/godotenv"
 )
 
@@ -33,7 +33,7 @@ func main() {
 	// commentHandler := handler.NewCommentHandler(commentUsecase)
 
 	// router := routes.NewRouter(userHandler)
-	router := injector.InitializedServer()
+	router := di.InitializedServer()
 
 	router.Run(":8080")
 }

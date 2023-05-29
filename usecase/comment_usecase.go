@@ -1,17 +1,18 @@
 package usecase
 
 import (
-	"log"
+	"errors"
 
 	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/repository"
 )
 
 type CommentUsecase interface {
-	Create(payload domain.CommentRequest, userId uint) (domain.Comment, error)
+	Create(payload dtos.CommentRequest, userId uint) (domain.Comment, error)
 	GetById(id uint) (domain.Comment, error)
 	GetAll() ([]domain.Comment, error)
-	Update(payload domain.CommentRequest, id uint, userId uint) (domain.Comment, error)
+	Update(payload dtos.CommentRequest, id uint, userId uint) (domain.Comment, error)
 	Delete(comment domain.Comment)
 }
 
@@ -21,13 +22,15 @@ type commentUsecase struct {
 }
 
 // Create implements CommentUsecase
-func (u *commentUsecase) Create(payload domain.CommentRequest, userId uint) (domain.Comment, error) {
+func (u *commentUsecase) Create(payload dtos.CommentRequest, userId uint) (domain.Comment, error) {
+	var comment domain.Comment
+
 	err := u.photoRepository.IsPhotoExist(payload.PhotoId)
 	if err != nil {
-		log.Fatal(err)
+		return comment, errors.New("photo tidak ada")
 	}
 
-	comment := domain.Comment{
+	comment = domain.Comment{
 		Message: payload.Message,
 		PhotoId: payload.PhotoId,
 		UserId:  userId,
@@ -67,7 +70,7 @@ func (u *commentUsecase) GetById(id uint) (domain.Comment, error) {
 }
 
 // Update implements CommentUsecase
-func (u *commentUsecase) Update(payload domain.CommentRequest, id uint, userId uint) (domain.Comment, error) {
+func (u *commentUsecase) Update(payload dtos.CommentRequest, id uint, userId uint) (domain.Comment, error) {
 	comment, err := u.commentRepository.FindById(id)
 	if err != nil {
 		panic(err)
