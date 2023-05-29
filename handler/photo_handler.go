@@ -125,17 +125,26 @@ func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
 	// 	return
 	// }
 
-	// err = h.validate.Struct(payload)
-	// if err != nil {
-	// 	errorMessage := helpers.FormatValidationErrors(err)
-	// 	helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
-	// 	return
-	// }
+	err := h.validate.Struct(payload)
+	if err != nil {
+		errorMessage := helpers.FormatValidationErrors(err)
+		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
+		return
+	}
 
 	// ambil file yang diupload
 	file, err := ctx.FormFile("photo_url")
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, "gagal mengambil file")
+		return
+	}
+
+	// digunakan untuk melihat isi file, baik nama, ukuran dan tipe
+	cekFile, _ := file.Open()
+	defer cekFile.Close()
+
+	if !helpers.IsImageFile(cekFile) {
+		helpers.FailResponse(ctx, http.StatusBadRequest, "jenis ini tidak didukung")
 		return
 	}
 
