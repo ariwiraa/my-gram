@@ -14,25 +14,22 @@ definitions:
       user_id:
         type: integer
     type: object
-  domain.CommentRequest:
-    properties:
-      message:
-        type: string
-      photo_id:
-        type: integer
-    type: object
   domain.Photo:
     properties:
       caption:
         type: string
+      comments:
+        items:
+          $ref: '#/definitions/domain.Comment'
+        type: array
       createdAt:
         type: string
       id:
         type: integer
       photo_url:
         type: string
-      title:
-        type: string
+      total_comment:
+        type: integer
       updatedAt:
         type: string
       user:
@@ -40,69 +37,64 @@ definitions:
       userId:
         type: integer
     type: object
-  domain.PhotoRequest:
+  domain.User:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      updatedAt:
+        type: string
+      username:
+        type: string
+    type: object
+  dtos.CommentRequest:
+    properties:
+      message:
+        type: string
+      photo_id:
+        type: integer
+    required:
+    - message
+    - photo_id
+    type: object
+  dtos.PhotoRequest:
     properties:
       caption:
         type: string
       photo_url:
         type: string
-      title:
-        type: string
+    required:
+    - photo_url
     type: object
-  domain.SocialMedia:
+  dtos.UserLogin:
     properties:
-      createdAt:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      social_media_url:
-        type: string
-      updatedAt:
-        type: string
-      userId:
-        type: integer
-    type: object
-  domain.SocialMediaRequest:
-    properties:
-      name:
-        type: string
-      social_media_url:
-        type: string
-    type: object
-  domain.User:
-    properties:
-      age:
-        type: integer
-      createdAt:
-        type: string
-      email:
-        type: string
-      id:
-        type: integer
-      updatedAt:
+      password:
+        minLength: 8
         type: string
       username:
+        minLength: 3
         type: string
+    required:
+    - password
+    - username
     type: object
-  domain.UserLogin:
+  dtos.UserRequest:
     properties:
       email:
         type: string
       password:
-        type: string
-    type: object
-  domain.UserRequest:
-    properties:
-      age:
-        type: integer
-      email:
-        type: string
-      password:
+        minLength: 8
         type: string
       username:
+        minLength: 3
         type: string
+    required:
+    - email
+    - password
+    - username
     type: object
   helpers.BadRequest:
     properties:
@@ -199,7 +191,7 @@ paths:
         name: comment
         required: true
         schema:
-          $ref: '#/definitions/domain.CommentRequest'
+          $ref: '#/definitions/dtos.CommentRequest'
       produces:
       - application/json
       responses:
@@ -360,7 +352,7 @@ paths:
         name: comment
         required: true
         schema:
-          $ref: '#/definitions/domain.CommentRequest'
+          $ref: '#/definitions/dtos.CommentRequest'
       - description: ID of the comment
         in: path
         name: id
@@ -473,7 +465,7 @@ paths:
         name: photo
         required: true
         schema:
-          $ref: '#/definitions/domain.PhotoRequest'
+          $ref: '#/definitions/dtos.PhotoRequest'
       produces:
       - application/json
       responses:
@@ -634,7 +626,7 @@ paths:
         name: photo
         required: true
         schema:
-          $ref: '#/definitions/domain.PhotoRequest'
+          $ref: '#/definitions/dtos.PhotoRequest'
       - description: ID of the photo
         in: path
         name: id
@@ -694,7 +686,7 @@ paths:
         name: login
         required: true
         schema:
-          $ref: '#/definitions/domain.UserLogin'
+          $ref: '#/definitions/dtos.UserLogin'
       produces:
       - application/json
       responses:
@@ -747,7 +739,7 @@ paths:
         name: register
         required: true
         schema:
-          $ref: '#/definitions/domain.UserRequest'
+          $ref: '#/definitions/dtos.UserRequest'
       produces:
       - application/json
       responses:
@@ -789,272 +781,6 @@ paths:
       summary: User Register
       tags:
       - user
-  /socialmedia:
-    get:
-      consumes:
-      - application/json
-      description: Get All social medias
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.SuccessResult'
-            - properties:
-                code:
-                  type: integer
-                data:
-                  $ref: '#/definitions/domain.SocialMedia'
-                message:
-                  type: string
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.BadRequest'
-            - properties:
-                code:
-                  type: integer
-                message:
-                  type: string
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.InternalServerError'
-            - properties:
-                code:
-                  type: integer
-                message:
-                  type: string
-              type: object
-      security:
-      - JWT: []
-      summary: Get All social medias
-      tags:
-      - social media
-    post:
-      consumes:
-      - application/json
-      description: Post details of social media
-      parameters:
-      - description: create social media
-        in: body
-        name: socialMedia
-        required: true
-        schema:
-          $ref: '#/definitions/domain.SocialMediaRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.SuccessResult'
-            - properties:
-                code:
-                  type: integer
-                data:
-                  $ref: '#/definitions/domain.SocialMedia'
-                message:
-                  type: string
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.BadRequest'
-            - properties:
-                code:
-                  type: integer
-                message:
-                  type: string
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.InternalServerError'
-            - properties:
-                code:
-                  type: integer
-                message:
-                  type: string
-              type: object
-      security:
-      - JWT: []
-      summary: Post Details
-      tags:
-      - social media
-  /socialmedia/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete the social media corresponding to the input Id
-      parameters:
-      - description: ID of the social media to be deleted
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.SuccessResult'
-            - properties:
-                code:
-                  type: integer
-                data:
-                  $ref: '#/definitions/domain.SocialMedia'
-                message:
-                  type: string
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.BadRequest'
-            - properties:
-                code:
-                  type: integer
-                message:
-                  type: string
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.InternalServerError'
-            - properties:
-                code:
-                  type: integer
-                message:
-                  type: string
-              type: object
-      security:
-      - JWT: []
-      summary: Delete social media identified by the given id
-      tags:
-      - social media
-    get:
-      consumes:
-      - application/json
-      description: Get details of social media corresponding is the input Id
-      parameters:
-      - description: ID of the social media
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.SuccessResult'
-            - properties:
-                code:
-                  type: integer
-                data:
-                  $ref: '#/definitions/domain.SocialMedia'
-                message:
-                  type: string
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.BadRequest'
-            - properties:
-                code:
-                  type: integer
-                message:
-                  type: string
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.InternalServerError'
-            - properties:
-                code:
-                  type: integer
-                message:
-                  type: string
-              type: object
-      summary: Get Details for a given id
-      tags:
-      - social media
-    put:
-      consumes:
-      - application/json
-      description: Put details of social media
-      parameters:
-      - description: ID of the social media
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: update social media
-        in: body
-        name: socialMedia
-        required: true
-        schema:
-          $ref: '#/definitions/domain.SocialMediaRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.SuccessResult'
-            - properties:
-                code:
-                  type: integer
-                data:
-                  $ref: '#/definitions/domain.SocialMedia'
-                message:
-                  type: string
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.BadRequest'
-            - properties:
-                code:
-                  type: integer
-                message:
-                  type: string
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.InternalServerError'
-            - properties:
-                code:
-                  type: integer
-                message:
-                  type: string
-              type: object
-      security:
-      - JWT: []
-      summary: Put Details
-      tags:
-      - social media
 securityDefinitions:
   JWT:
     description: 'How to input in swagger : ''Bearer <insert_your_token_here>'''
