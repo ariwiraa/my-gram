@@ -31,7 +31,8 @@ func initializedUserHandler() handler.UserHandler {
 func initializedPhotoHandler() handler.PhotoHandler {
 	db := config.InitializeDB()
 	photoRepository := repository.NewPhotoRepository(db)
-	photoUsecase := usecase.NewPhotoUsecase(photoRepository)
+	commentRepository := repository.NewCommentRepository(db)
+	photoUsecase := usecase.NewPhotoUsecase(photoRepository, commentRepository)
 	validate := validator.New()
 	photoHandler := handler.NewPhotoHandler(photoUsecase, validate)
 	return photoHandler
@@ -59,6 +60,6 @@ func InitializedServer() *gin.Engine {
 
 var userSet = wire.NewSet(repository.NewUserRepository, usecase.NewUserUsecase, handler.NewUserHandler)
 
-var photoSet = wire.NewSet(repository.NewPhotoRepository, usecase.NewPhotoUsecase, handler.NewPhotoHandler)
+var photoSet = wire.NewSet(repository.NewPhotoRepository, repository.NewCommentRepository, usecase.NewPhotoUsecase, handler.NewPhotoHandler)
 
 var commentSet = wire.NewSet(repository.NewCommentRepository, repository.NewPhotoRepository, usecase.NewCommentUsecase, handler.NewCommentHandler)

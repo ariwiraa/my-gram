@@ -15,10 +15,22 @@ type CommentRepository interface {
 	FindAll() ([]domain.Comment, error)
 	Update(comment domain.Comment, id uint) (domain.Comment, error)
 	Delete(id uint)
+	CountCommentsByPhotoId(photoId int64) (int64, error)
 }
 
 type commentRepository struct {
 	db *gorm.DB
+}
+
+// CountCommentsByPhotoId implements CommentRepository
+func (r *commentRepository) CountCommentsByPhotoId(photoId int64) (int64, error) {
+	var totalComment int64
+	err := r.db.Model(&domain.Comment{}).Where("photo_id = ?", photoId).Count(&totalComment).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return totalComment, nil
 }
 
 // Create implements CommentRepository

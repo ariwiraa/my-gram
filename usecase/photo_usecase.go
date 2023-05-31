@@ -15,7 +15,8 @@ type PhotoUsecase interface {
 }
 
 type photoUsecase struct {
-	photoRepository repository.PhotoRepository
+	photoRepository   repository.PhotoRepository
+	commentRepository repository.CommentRepository
 }
 
 // Create implements PhotoUsecase
@@ -56,6 +57,9 @@ func (u *photoUsecase) GetById(id uint) (domain.Photo, error) {
 		return photo, err
 	}
 
+	totalComments, _ := u.commentRepository.CountCommentsByPhotoId(int64(photo.ID))
+	photo.TotalComment = totalComments
+
 	return photo, nil
 }
 
@@ -78,6 +82,9 @@ func (u *photoUsecase) Update(payload dtos.PhotoRequest, id uint, userId uint) (
 	return updatedPhoto, nil
 }
 
-func NewPhotoUsecase(photo repository.PhotoRepository) PhotoUsecase {
-	return &photoUsecase{photoRepository: photo}
+func NewPhotoUsecase(photo repository.PhotoRepository, comment repository.CommentRepository) PhotoUsecase {
+	return &photoUsecase{
+		photoRepository:   photo,
+		commentRepository: comment,
+	}
 }
