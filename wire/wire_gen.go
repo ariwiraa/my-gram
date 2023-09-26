@@ -10,8 +10,10 @@ import (
 	"github.com/ariwiraa/my-gram/config"
 	"github.com/ariwiraa/my-gram/handler"
 	"github.com/ariwiraa/my-gram/repository"
+	"github.com/ariwiraa/my-gram/repository/impl"
 	"github.com/ariwiraa/my-gram/routes"
 	"github.com/ariwiraa/my-gram/usecase"
+	impl2 "github.com/ariwiraa/my-gram/usecase/impl"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/wire"
@@ -33,8 +35,10 @@ func initializedUserHandler() handler.UserHandler {
 	db := config.InitializeDB()
 	userRepository := repository.NewUserRepository(db)
 	userUsecase := usecase.NewUserUsecase(userRepository)
+	authenticationRepository := impl.NewAuthenticationRepositoryImpl(db)
+	authenticationUsecase := impl2.NewAuthenticationUsecaseImpl(authenticationRepository)
 	validate := validator.New()
-	userHandler := handler.NewUserHandler(userUsecase, validate)
+	userHandler := handler.NewUserHandler(userUsecase, authenticationUsecase, validate)
 	return userHandler
 }
 
@@ -69,7 +73,9 @@ func InitializedServer() *gin.Engine {
 
 // injector.go:
 
-var userSet = wire.NewSet(repository.NewUserRepository, usecase.NewUserUsecase, handler.NewUserHandler)
+var authenticationSet = wire.NewSet(impl.NewAuthenticationRepositoryImpl, impl2.NewAuthenticationUsecaseImpl)
+
+var userSet = wire.NewSet(repository.NewUserRepository, usecase.NewUserUsecase, authenticationSet, handler.NewUserHandler)
 
 var photoSet = wire.NewSet(repository.NewPhotoRepository, repository.NewCommentRepository, usecase.NewPhotoUsecase, handler.NewPhotoHandler)
 

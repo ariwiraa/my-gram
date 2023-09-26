@@ -7,15 +7,21 @@ import (
 	"github.com/ariwiraa/my-gram/config"
 	"github.com/ariwiraa/my-gram/handler"
 	"github.com/ariwiraa/my-gram/repository"
+	repositoryImpl "github.com/ariwiraa/my-gram/repository/impl"
 	"github.com/ariwiraa/my-gram/routes"
 	"github.com/ariwiraa/my-gram/usecase"
+	usecaseImpl "github.com/ariwiraa/my-gram/usecase/impl"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/wire"
 )
 
+var authenticationSet = wire.NewSet(
+	repositoryImpl.NewAuthenticationRepositoryImpl, usecaseImpl.NewAuthenticationUsecaseImpl,
+)
+
 var userSet = wire.NewSet(
-	repository.NewUserRepository, usecase.NewUserUsecase, handler.NewUserHandler,
+	repository.NewUserRepository, usecase.NewUserUsecase, authenticationSet, handler.NewUserHandler,
 )
 
 var photoSet = wire.NewSet(
