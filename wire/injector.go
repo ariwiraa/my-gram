@@ -1,7 +1,7 @@
 //go:build wireinject
 // +build wireinject
 
-package di
+package wire
 
 import (
 	"github.com/ariwiraa/my-gram/config"
@@ -25,6 +25,13 @@ var commentSet = wire.NewSet(
 	repository.NewCommentRepository, repository.NewPhotoRepository, usecase.NewCommentUsecase, handler.NewCommentHandler,
 )
 
+var likesSet = wire.NewSet(repository.NewUserLikesPhotoRepository, repository.NewPhotoRepository, usecase.NewUserLikesPhotosUsecase, handler.NewUserLikesPhotosHandler)
+
+func initializedLikesHandler() handler.UserLikesPhotosHandler {
+	wire.Build(config.InitializeDB, validator.New, likesSet)
+	return nil
+}
+
 func initializedUserHandler() handler.UserHandler {
 	wire.Build(config.InitializeDB, validator.New, userSet)
 	return nil
@@ -41,6 +48,6 @@ func initializedCommentHandler() handler.CommentHandler {
 }
 
 func InitializedServer() *gin.Engine {
-	wire.Build(initializedUserHandler, initializedPhotoHandler, initializedCommentHandler, routes.NewRouter)
+	wire.Build(initializedUserHandler, initializedPhotoHandler, initializedCommentHandler, initializedLikesHandler, routes.NewRouter)
 	return nil
 }

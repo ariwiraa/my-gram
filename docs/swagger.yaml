@@ -26,6 +26,10 @@ definitions:
         type: string
       id:
         type: integer
+      likedBy:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
       photo_url:
         type: string
       total_comment:
@@ -45,6 +49,10 @@ definitions:
         type: string
       id:
         type: integer
+      liked_photos:
+        items:
+          $ref: '#/definitions/domain.Photo'
+        type: array
       updatedAt:
         type: string
       username:
@@ -675,6 +683,60 @@ paths:
       summary: put Details
       tags:
       - photo
+  /photo/{id}/likes:
+    post:
+      consumes:
+      - application/json
+      description: user can like the photo
+      parameters:
+      - description: ID of the comment
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.SuccessResult'
+            - properties:
+                code:
+                  type: integer
+                data:
+                  type: string
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.BadRequest'
+            - properties:
+                code:
+                  type: integer
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.InternalServerError'
+            - properties:
+                code:
+                  type: integer
+                message:
+                  type: string
+              type: object
+      security:
+      - JWT: []
+      summary: like photo
+      tags:
+      - likes
   /signin:
     post:
       consumes:
