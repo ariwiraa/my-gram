@@ -14,5 +14,6 @@ type Photo struct {
 	UpdatedAt    *time.Time
 	User         *User     `json:"user"`
 	TotalComment int64     `gorm:"-" json:"total_comment"`
-	Comments     []Comment `gorm:"foreignkey:PhotoId" json:"comments"`
+	Comments     []Comment `gorm:"foreignKey:PhotoId" json:"comments"`
+	LikedBy      []User    `gorm:"many2many:user_likes_photos"`
 }

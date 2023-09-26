@@ -4,7 +4,7 @@
 //go:build !wireinject
 // +build !wireinject
 
-package di
+package wire
 
 import (
 	"github.com/ariwiraa/my-gram/config"
@@ -18,6 +18,16 @@ import (
 )
 
 // Injectors from injector.go:
+
+func initializedLikesHandler() handler.UserLikesPhotosHandler {
+	db := config.InitializeDB()
+	userLikesPhotoRepository := repository.NewUserLikesPhotoRepository(db)
+	photoRepository := repository.NewPhotoRepository(db)
+	userLikesPhotosUsecase := usecase.NewUserLikesPhotosUsecase(userLikesPhotoRepository, photoRepository)
+	validate := validator.New()
+	userLikesPhotosHandler := handler.NewUserLikesPhotosHandler(userLikesPhotosUsecase, validate)
+	return userLikesPhotosHandler
+}
 
 func initializedUserHandler() handler.UserHandler {
 	db := config.InitializeDB()
@@ -52,7 +62,8 @@ func InitializedServer() *gin.Engine {
 	userHandler := initializedUserHandler()
 	photoHandler := initializedPhotoHandler()
 	commentHandler := initializedCommentHandler()
-	engine := routes.NewRouter(userHandler, photoHandler, commentHandler)
+	userLikesPhotosHandler := initializedLikesHandler()
+	engine := routes.NewRouter(userHandler, photoHandler, commentHandler, userLikesPhotosHandler)
 	return engine
 }
 
@@ -63,3 +74,5 @@ var userSet = wire.NewSet(repository.NewUserRepository, usecase.NewUserUsecase, 
 var photoSet = wire.NewSet(repository.NewPhotoRepository, repository.NewCommentRepository, usecase.NewPhotoUsecase, handler.NewPhotoHandler)
 
 var commentSet = wire.NewSet(repository.NewCommentRepository, repository.NewPhotoRepository, usecase.NewCommentUsecase, handler.NewCommentHandler)
+
+var likesSet = wire.NewSet(repository.NewUserLikesPhotoRepository, repository.NewPhotoRepository, usecase.NewUserLikesPhotosUsecase, handler.NewUserLikesPhotosHandler)

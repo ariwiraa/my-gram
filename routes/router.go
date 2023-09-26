@@ -24,7 +24,7 @@ import (
 // @in                          header
 // @name                        Authorization
 // @description	How to input in swagger : 'Bearer <insert_your_token_here>'
-func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandler, commentHandler handler.CommentHandler) *gin.Engine {
+func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandler, commentHandler handler.CommentHandler, likesHandler handler.UserLikesPhotosHandler) *gin.Engine {
 	router := gin.Default()
 
 	router.POST("/signup", userHandler.PostUserRegisterHandler)
@@ -39,6 +39,7 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 		photo.GET("/:id", photoHandler.GetPhotoHandler)
 		photo.PUT("/:id", middlewares.PhotoAuthorization(), photoHandler.PutPhotoHandler)
 		photo.DELETE("/:id", middlewares.PhotoAuthorization(), photoHandler.DeletePhotoHandler)
+		photo.POST("/:id/likes", likesHandler.PostLikesHandler)
 	}
 
 	comment := router.Group("/comment")
