@@ -2,7 +2,6 @@ package repository
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/ariwiraa/my-gram/domain"
@@ -86,8 +85,6 @@ func (r *commentRepository) Update(comment domain.Comment, id uint) (domain.Comm
 	if err != nil {
 		return comment, err
 	}
-
-	fmt.Println("repo", comment)
 
 	return comment, nil
 }

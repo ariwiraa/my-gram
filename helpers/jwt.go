@@ -3,46 +3,74 @@ package helpers
 import (
 	"errors"
 	"log"
-	"os"
-	"strings"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
 )
 
-func GenerateToken(id uint, email string) string {
-	claims := jwt.MapClaims{
-		"id":    id,
-		"email": email,
+// var myAccessToken = os.Getenv("TOKENKEY")
+// var myRefreshToken = []byte(config.LoadJWTConfig().GetJWTRefreshKey())
+
+// TODO: Sementara masih hardcode, nanti ganti ke env
+var myAccessToken = []byte("access_token")
+var myRefreshToken = []byte("refresh_token")
+var accessTokenExpiry = 1000 * time.Minute
+var refreshTokenExpiry = 10000 * time.Minute
+
+type claims struct {
+	Id uint64
+	jwt.StandardClaims
+}
+
+func NewAccessToken(id uint64) *claims {
+	return &claims{
+		Id: id,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Duration(accessTokenExpiry)).Unix(),
+		},
 	}
+}
 
-	parsetoken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+func NewRefreshToken(id uint64) *claims {
+	return &claims{
+		Id: id,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(refreshTokenExpiry).Unix(),
+		},
+	}
+}
 
-	signedToken, err := parsetoken.SignedString([]byte(os.Getenv("SECRET_KEY")))
+func (c *claims) GenerateAccessToken() string {
+	parsetoken := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+	signedToken, err := parsetoken.SignedString(myAccessToken)
 	if err != nil {
-		log.Println("gagal membuat token")
+		log.Fatal("gagal membuat token")
 	}
 
 	return signedToken
 }
 
-func VerifyToken(c *gin.Context) (interface{}, error) {
-	errResponse := errors.New("sign in to proceed")
-	headerToken := c.Request.Header.Get("Authorization")
-	bearer := strings.HasPrefix(headerToken, "Bearer")
+func (c *claims) GenerateRefreshToken() string {
 
-	if !bearer {
-		return nil, errResponse
+	parsetoken := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+
+	signedToken, err := parsetoken.SignedString(myRefreshToken)
+	if err != nil {
+		log.Fatal("gagal membuat refresh token")
 	}
 
-	stringToken := strings.Split(headerToken, " ")[1]
+	return signedToken
+}
 
-	token, _ := jwt.Parse(stringToken, func(t *jwt.Token) (interface{}, error) {
+func VerifyToken(tokenString string) (interface{}, error) {
+	errResponse := errors.New("sign in to proceed")
+
+	token, _ := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errResponse
 		}
 
-		return []byte(os.Getenv("SECRET_KEY")), nil
+		return []byte(myAccessToken), nil
 	})
 
 	if _, ok := token.Claims.(jwt.MapClaims); !ok && !token.Valid {
@@ -50,4 +78,19 @@ func VerifyToken(c *gin.Context) (interface{}, error) {
 	}
 
 	return token.Claims.(jwt.MapClaims), nil
+}
+
+func VerifyRefreshToken(token string) (*claims, error) {
+	verifyToken, err := jwt.ParseWithClaims(token, &claims{}, func(t *jwt.Token) (interface{}, error) {
+		return myRefreshToken, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if payload, ok := verifyToken.Claims.(*claims); ok && verifyToken.Valid {
+		return payload, nil
+	}
+
+	return nil, errors.New("refresh token tidak valid")
 }

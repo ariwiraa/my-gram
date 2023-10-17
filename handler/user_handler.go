@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 
+	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
@@ -14,11 +14,62 @@ import (
 type UserHandler interface {
 	PostUserRegisterHandler(ctx *gin.Context)
 	PostUserLoginHandler(ctx *gin.Context)
+	PutAccessTokenHandler(ctx *gin.Context)
+	LogoutHandler(ctx *gin.Context)
 }
 
 type userHandler struct {
 	userUsecase usecase.UserUsecase
+	authUsecase usecase.AuthenticationUsecase
 	validate    *validator.Validate
+}
+
+// PutAccessTokenHandler implements UserHandler.
+func (h *userHandler) PutAccessTokenHandler(ctx *gin.Context) {
+	var payload domain.Authentication
+
+	err := ctx.ShouldBindJSON(&payload)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = h.authUsecase.ExistsByRefreshToken(payload.RefreshToken)
+	if err != nil {
+		return
+	}
+
+	claims, err := helpers.VerifyRefreshToken(payload.RefreshToken)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	accessToken := helpers.NewAccessToken(claims.Id).GenerateAccessToken()
+
+	helpers.SuccessResponse(ctx, http.StatusOK, gin.H{
+		"access_token": accessToken,
+	})
+
+}
+
+// Logout implements UserHandler.
+func (h *userHandler) LogoutHandler(ctx *gin.Context) {
+	var payload domain.Authentication
+
+	err := ctx.ShouldBindJSON(&payload)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = h.authUsecase.Delete(payload.RefreshToken)
+	if err != nil {
+		return
+	}
+
+	helpers.SuccessResponse(ctx, http.StatusOK, nil)
+
 }
 
 // UserLogin godoc
@@ -35,11 +86,11 @@ type userHandler struct {
 // PostUserLoginHandler implements UserHandler
 func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
 	var payload dtos.UserLogin
-	fmt.Println(payload)
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	loggedInUser, err := h.userUsecase.Login(payload)
@@ -48,9 +99,17 @@ func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	token := helpers.GenerateToken(loggedInUser.ID, loggedInUser.Email)
+	accessToken := helpers.NewAccessToken(uint64(loggedInUser.ID)).GenerateAccessToken()
+	refreshToken := helpers.NewRefreshToken(uint64(loggedInUser.ID)).GenerateRefreshToken()
+
+	err = h.authUsecase.Add(refreshToken)
+	if err != nil {
+		return
+	}
+
 	helpers.SuccessResponse(ctx, http.StatusOK, gin.H{
-		"access_token": token,
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
 	})
 }
 
@@ -95,6 +154,10 @@ func (h *userHandler) PostUserRegisterHandler(ctx *gin.Context) {
 	})
 }
 
-func NewUserHandler(userUsecase usecase.UserUsecase, validate *validator.Validate) UserHandler {
-	return &userHandler{userUsecase: userUsecase, validate: validate}
+func NewUserHandler(userUsecase usecase.UserUsecase, authUsecase usecase.AuthenticationUsecase, validate *validator.Validate) UserHandler {
+	return &userHandler{
+		userUsecase: userUsecase,
+		authUsecase: authUsecase,
+		validate:    validate,
+	}
 }

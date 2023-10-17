@@ -29,6 +29,8 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 
 	router.POST("/signup", userHandler.PostUserRegisterHandler)
 	router.POST("/signin", userHandler.PostUserLoginHandler)
+	router.PUT("/refresh", userHandler.PutAccessTokenHandler)
+	router.DELETE("/signout", middlewares.Authentication(), userHandler.LogoutHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	photo := router.Group("/photo")
@@ -37,8 +39,8 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 		photo.POST("", photoHandler.PostPhotoHandler)
 		photo.GET("", photoHandler.GetPhotosHandler)
 		photo.GET("/:id", photoHandler.GetPhotoHandler)
-		photo.PUT("/:id", middlewares.PhotoAuthorization(), photoHandler.PutPhotoHandler)
-		photo.DELETE("/:id", middlewares.PhotoAuthorization(), photoHandler.DeletePhotoHandler)
+		photo.PUT("/:id", photoHandler.PutPhotoHandler)
+		photo.DELETE("/:id", photoHandler.DeletePhotoHandler)
 		photo.POST("/:id/likes", likesHandler.PostLikesHandler)
 	}
 
@@ -48,8 +50,8 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 		comment.POST("", commentHandler.PostCommentHandler)
 		comment.GET("", commentHandler.GetCommentsHandler)
 		comment.GET("/:id", commentHandler.GetCommentHandler)
-		comment.PUT("/:id", middlewares.CommentAuthorization(), commentHandler.PutCommentHandler)
-		comment.DELETE("/:id", middlewares.CommentAuthorization(), commentHandler.DeleteCommentHandler)
+		comment.PUT("/:id", commentHandler.PutCommentHandler)
+		comment.DELETE("/:id", commentHandler.DeleteCommentHandler)
 	}
 
 	return router
