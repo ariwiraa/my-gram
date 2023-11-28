@@ -25,7 +25,12 @@ var userSet = wire.NewSet(
 )
 
 var photoSet = wire.NewSet(
-	repository.NewPhotoRepository, repository.NewCommentRepository, usecase.NewPhotoUsecase, handler.NewPhotoHandler,
+	repository.NewPhotoRepository,
+	repository.NewCommentRepository,
+	repositoryImpl.NewTagRepositoryImpl,
+	repositoryImpl.NewPhotoTagsRepositoryImpl,
+	usecase.NewPhotoUsecase,
+	handler.NewPhotoHandler,
 )
 var commentSet = wire.NewSet(
 	repository.NewCommentRepository, repository.NewPhotoRepository, usecase.NewCommentUsecase, handler.NewCommentHandler,

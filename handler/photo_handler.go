@@ -3,20 +3,20 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
-	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 )
 
 type PhotoHandler interface {
 	PostPhotoHandler(ctx *gin.Context)
 	GetPhotosHandler(ctx *gin.Context)
+	GetPhotosByUserIdHandler(ctx *gin.Context)
 	GetPhotoHandler(ctx *gin.Context)
 	PutPhotoHandler(ctx *gin.Context)
 	DeletePhotoHandler(ctx *gin.Context)
@@ -41,12 +41,10 @@ type photoHandler struct {
 // @Router /photo/{id} [delete]
 // DeletePhotoHandler implements PhotoHandler
 func (h *photoHandler) DeletePhotoHandler(ctx *gin.Context) {
-	var photo domain.Photo
-	requestParam := ctx.Param("id")
-	photoId, _ := strconv.Atoi(requestParam)
-	photo.ID = uint(photoId)
 
-	h.photoUsecase.Delete(photo)
+	photoId := ctx.Param("id")
+
+	h.photoUsecase.Delete(photoId)
 	helpers.SuccessResponse(ctx, http.StatusOK, nil)
 }
 
@@ -64,10 +62,9 @@ func (h *photoHandler) DeletePhotoHandler(ctx *gin.Context) {
 // @Router /photo/{id} [get]
 // GetPhotoHandler implements PhotoHandler
 func (h *photoHandler) GetPhotoHandler(ctx *gin.Context) {
-	requestParam := ctx.Param("id")
-	photoId, _ := strconv.Atoi(requestParam)
+	photoId := ctx.Param("id")
 
-	photo, err := h.photoUsecase.GetById(uint(photoId))
+	photo, err := h.photoUsecase.GetById(photoId)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 	}
@@ -98,6 +95,32 @@ func (h *photoHandler) GetPhotosHandler(ctx *gin.Context) {
 	helpers.SuccessResponse(ctx, http.StatusOK, photos)
 }
 
+// Getphoto godoc
+// @Summary Get Details for a given id
+// @Description Get details of photo corresponding is the input Id
+// @Tags photo
+// @Accept json
+// @Produce json
+// @Param id path int true "ID of the photo"
+// @Security JWT
+// @Success 200 {object} helpers.SuccessResult{data=domain.Photo,code=int,message=string}
+// @Failure 400 {object} helpers.BadRequest{code=int,message=string}
+// @Success 500 {object} helpers.InternalServerError{code=int,message=string}
+// @Router /photo/{id} [get]
+// GetPhotoHandler implements PhotoHandler
+func (h *photoHandler) GetPhotosByUserIdHandler(ctx *gin.Context) {
+	userData := ctx.MustGet("userData").(jwt.MapClaims)
+	userID := uint(userData["Id"].(float64))
+
+	photo, err := h.photoUsecase.GetAllPhotosByUserId(userID)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+	}
+
+	helpers.SuccessResponse(ctx, http.StatusOK, photo)
+
+}
+
 // CreatePhoto godoc
 // @Summary Post Details
 // @Description Post details of photo
@@ -115,44 +138,35 @@ func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
 	var payload dtos.PhotoRequest
 
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
-	userID := uint(userData["id"].(float64))
+	userID := uint(userData["Id"].(float64))
 
 	// ambil data dari formdata
-	payload.Caption = ctx.PostForm("caption")
-	// err := ctx.ShouldBind(&payload)
-	// if err != nil {
-	// 	helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
-	// 	return
-	// }
+	err := ctx.ShouldBindWith(&payload, binding.FormMultipart)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
-	err := h.validate.Struct(payload)
+	err = h.validate.Struct(payload)
 	if err != nil {
 		errorMessage := helpers.FormatValidationErrors(err)
 		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
 		return
 	}
 
-	// ambil file yang diupload
-	file, err := ctx.FormFile("photo_url")
-	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, "gagal mengambil file")
-		return
-	}
+	file, _ := payload.PhotoUrl.Open()
+	defer file.Close()
 
-	// digunakan untuk melihat isi file, baik nama, ukuran dan tipe
-	cekFile, _ := file.Open()
-	defer cekFile.Close()
-
-	if !helpers.IsImageFile(cekFile) {
+	if !helpers.IsImageFile(file) {
 		helpers.FailResponse(ctx, http.StatusBadRequest, "jenis ini tidak didukung")
 		return
 	}
 
 	//tentukan destinasi penyimpanan file
-	path := fmt.Sprintf("images/%d-%s", userID, file.Filename)
+	path := fmt.Sprintf("images/%d-%s", userID, payload.PhotoUrl.Filename)
 
 	//save file yang diupload
-	err = ctx.SaveUploadedFile(file, path)
+	err = ctx.SaveUploadedFile(payload.PhotoUrl, path)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -183,20 +197,26 @@ func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
 // @Router /photo/{id} [put]
 // PutPhotoHandler implements PhotoHandler
 func (h *photoHandler) PutPhotoHandler(ctx *gin.Context) {
-	requestParam := ctx.Param("id")
-	photoId, _ := strconv.Atoi(requestParam)
+	photoId := ctx.Param("id")
 
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
-	userID := uint(userData["id"].(float64))
+	userID := uint(userData["Id"].(float64))
 
-	var payload dtos.PhotoRequest
-	err := ctx.ShouldBindJSON(&payload)
+	var payload dtos.UpdatePhotoRequest
+	err := ctx.ShouldBindWith(&payload, binding.FormMultipart)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	photo, err := h.photoUsecase.Update(payload, uint(photoId), userID)
+	err = h.validate.Struct(payload)
+	if err != nil {
+		errorMessage := helpers.FormatValidationErrors(err)
+		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
+		return
+	}
+
+	photo, err := h.photoUsecase.Update(payload, photoId, userID)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return

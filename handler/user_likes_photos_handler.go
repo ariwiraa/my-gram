@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
@@ -34,13 +33,12 @@ type userLikesPhotosHandler struct {
 // @Router /photo/{id}/likes [post]
 // PostLikesHandler implements UserLikesPhotosHandler
 func (h *userLikesPhotosHandler) PostLikesHandler(ctx *gin.Context) {
-	requestParam := ctx.Param("id")
-	photoId, _ := strconv.Atoi(requestParam)
+	photoId := ctx.Param("id")
 
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userId := uint(userData["id"].(float64))
 
-	likes, err := h.likesUsecase.LikeThePhoto(uint(photoId), userId)
+	likes, err := h.likesUsecase.LikeThePhoto(photoId, userId)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return

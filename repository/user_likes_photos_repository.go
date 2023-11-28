@@ -10,9 +10,9 @@ import (
 
 type UserLikesPhotoRepository interface {
 	InsertLike(userLikesPhoto domain.UserLikesPhoto) error
-	DeleteLike(photoId, userId uint)
-	VerifyUserLike(photoId, userId uint) (bool, error)
-	CountLikesPhotoById(photoId uint) (uint, error)
+	DeleteLike(photoId string, userId uint)
+	VerifyUserLike(photoId string, userId uint) (bool, error)
+	CountLikesPhotoById(photoId string) (uint, error)
 	GetLikedPhotosByUserId(userId uint) ([]domain.Photo, error)
 }
 
@@ -21,7 +21,7 @@ type userLikesPhotoRepository struct {
 }
 
 // CountLikesPhotoById implements UserLikesPhotoRepository
-func (r *userLikesPhotoRepository) CountLikesPhotoById(photoId uint) (uint, error) {
+func (r *userLikesPhotoRepository) CountLikesPhotoById(photoId string) (uint, error) {
 	var totalLikes int64
 	err := r.db.Model(&domain.UserLikesPhoto{}).Where("photo_id = ?", photoId).Count(&totalLikes).Error
 	if err != nil {
@@ -32,7 +32,7 @@ func (r *userLikesPhotoRepository) CountLikesPhotoById(photoId uint) (uint, erro
 }
 
 // DeleteLike implements UserLikesPhotoRepository
-func (r *userLikesPhotoRepository) DeleteLike(photoId uint, userId uint) {
+func (r *userLikesPhotoRepository) DeleteLike(photoId string, userId uint) {
 	var userLikesPhoto domain.UserLikesPhoto
 
 	err := r.db.Debug().Where("photo_id = ? AND user_id = ?", photoId, userId).Delete(&userLikesPhoto).Error
@@ -83,7 +83,7 @@ func (r *userLikesPhotoRepository) InsertLike(userLikesPhoto domain.UserLikesPho
 }
 
 // VerifyUserLike implements UserLikesPhotoRepository
-func (r *userLikesPhotoRepository) VerifyUserLike(photoId uint, userId uint) (bool, error) {
+func (r *userLikesPhotoRepository) VerifyUserLike(photoId string, userId uint) (bool, error) {
 	var userLikesPhoto domain.UserLikesPhoto
 
 	err := r.db.Debug().Where("photo_id = ? AND user_id = ?", photoId, userId).First(&userLikesPhoto).Error

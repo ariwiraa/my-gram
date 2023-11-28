@@ -6,14 +6,15 @@ import (
 
 // Photo represents the model for an Photo
 type Photo struct {
-	ID           uint   `gorm:"primaryKey" json:"id"`
-	Caption      string `gorm:"not null" json:"caption"`
-	PhotoUrl     string `gorm:"not null" json:"photo_url"`
-	UserId       uint
-	CreatedAt    *time.Time
-	UpdatedAt    *time.Time
-	User         *User     `json:"user"`
-	TotalComment int64     `gorm:"-" json:"total_comment"`
-	Comments     []Comment `gorm:"foreignKey:PhotoId" json:"comments"`
-	LikedBy      []User    `gorm:"many2many:user_likes_photos"`
+	ID           string     `gorm:"primaryKey" json:"id"`
+	Caption      string     `json:"caption"`
+	PhotoUrl     string     `gorm:"not null" json:"photo_url"`
+	UserId       uint       `json:"user_id"`
+	CreatedAt    *time.Time `json:"created_at"`
+	UpdatedAt    *time.Time `json:"updated_at"`
+	User         User       `gorm:"foreignKey:UserId" json:"user,omitempty"`
+	TotalComment int64      `gorm:"-" json:"total_comment"`
+	Comments     []Comment  `gorm:"foreignKey:PhotoId" json:"comments,omitempty"`
+	LikedBy      []User     `gorm:"many2many:user_likes_photos" json:"liked_by,omitempty"`
+	Tags         []Tag      `gorm:"many2many:photo_tags" json:"tags,omitempty"`
 }
