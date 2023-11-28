@@ -14,7 +14,7 @@ type CommentRepository interface {
 	FindAll() ([]domain.Comment, error)
 	Update(comment domain.Comment, id uint) (domain.Comment, error)
 	Delete(id uint)
-	CountCommentsByPhotoId(photoId int64) (int64, error)
+	CountCommentsByPhotoId(photoId string) (int64, error)
 }
 
 type commentRepository struct {
@@ -22,7 +22,7 @@ type commentRepository struct {
 }
 
 // CountCommentsByPhotoId implements CommentRepository
-func (r *commentRepository) CountCommentsByPhotoId(photoId int64) (int64, error) {
+func (r *commentRepository) CountCommentsByPhotoId(photoId string) (int64, error) {
 	var totalComment int64
 	err := r.db.Model(&domain.Comment{}).Where("photo_id = ?", photoId).Count(&totalComment).Error
 	if err != nil {

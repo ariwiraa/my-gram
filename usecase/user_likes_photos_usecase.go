@@ -8,7 +8,7 @@ import (
 )
 
 type UserLikesPhotosUsecase interface {
-	LikeThePhoto(photoId, userId uint) (string, error)
+	LikeThePhoto(photoId string, userId uint) (string, error)
 }
 
 type userLikesPhotosUsecase struct {
@@ -17,7 +17,7 @@ type userLikesPhotosUsecase struct {
 }
 
 // LikeThePhoto implements UserLikesPhotosUsecase
-func (u *userLikesPhotosUsecase) LikeThePhoto(photoId, userId uint) (string, error) {
+func (u *userLikesPhotosUsecase) LikeThePhoto(photoId string, userId uint) (string, error) {
 	err := u.photoRepository.IsPhotoExist(photoId)
 	if err != nil {
 		return "", errors.New("foto tidak tersedia")

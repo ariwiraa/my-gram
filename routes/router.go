@@ -37,7 +37,8 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 	{
 		photo.Use(middlewares.Authentication())
 		photo.POST("", photoHandler.PostPhotoHandler)
-		photo.GET("", photoHandler.GetPhotosHandler)
+		photo.GET("/all", photoHandler.GetPhotosHandler)
+		photo.GET("", photoHandler.GetPhotosByUserIdHandler)
 		photo.GET("/:id", photoHandler.GetPhotoHandler)
 		photo.PUT("/:id", photoHandler.PutPhotoHandler)
 		photo.DELETE("/:id", photoHandler.DeletePhotoHandler)

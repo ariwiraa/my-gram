@@ -10,11 +10,13 @@ import (
 
 type PhotoRepository interface {
 	Create(photo domain.Photo) (domain.Photo, error)
-	FindById(id uint) (domain.Photo, error)
+	FindById(id string) (domain.Photo, error)
 	FindAll() ([]domain.Photo, error)
-	Update(photo domain.Photo, id uint) (domain.Photo, error)
-	Delete(id uint)
-	IsPhotoExist(id uint) error
+	FindByUserId(id uint) ([]domain.Photo, error)
+	FindByIdAndByUserId(id string, userId uint) (*domain.Photo, error)
+	Update(photo domain.Photo, id string) (domain.Photo, error)
+	Delete(photo domain.Photo)
+	IsPhotoExist(id string) error
 }
 
 type photoRepository struct {
@@ -22,7 +24,7 @@ type photoRepository struct {
 }
 
 // IsPhotoExist implements PhotoRepository
-func (r *photoRepository) IsPhotoExist(id uint) error {
+func (r *photoRepository) IsPhotoExist(id string) error {
 	var photo domain.Photo
 	err := r.db.Debug().First(&photo, "id = ?", id).Error
 	if err != nil {
@@ -43,10 +45,8 @@ func (r *photoRepository) Create(photo domain.Photo) (domain.Photo, error) {
 }
 
 // Delete implements PhotoRepository
-func (r *photoRepository) Delete(id uint) {
-	var photo domain.Photo
-
-	err := r.db.Debug().Where("id = ?", id).Delete(&photo).Error
+func (r *photoRepository) Delete(photo domain.Photo) {
+	err := r.db.Debug().Where("id = ?", photo.ID).Delete(&photo).Error
 	if err != nil {
 		log.Fatalln("error deleting data", err)
 		return
@@ -65,7 +65,7 @@ func (r *photoRepository) FindAll() ([]domain.Photo, error) {
 }
 
 // FindById implements PhotoRepository
-func (r *photoRepository) FindById(id uint) (domain.Photo, error) {
+func (r *photoRepository) FindById(id string) (domain.Photo, error) {
 	var photo domain.Photo
 	err := r.db.Debug().Preload("Comments").First(&photo, "id = ?", id).Error
 	if err != nil {
@@ -79,7 +79,7 @@ func (r *photoRepository) FindById(id uint) (domain.Photo, error) {
 }
 
 // Update implements PhotoRepository
-func (r *photoRepository) Update(photo domain.Photo, id uint) (domain.Photo, error) {
+func (r *photoRepository) Update(photo domain.Photo, id string) (domain.Photo, error) {
 
 	err := r.db.Debug().Model(&photo).Where("id = ?", id).Updates(&photo).Error
 	if err != nil {
@@ -91,4 +91,27 @@ func (r *photoRepository) Update(photo domain.Photo, id uint) (domain.Photo, err
 
 func NewPhotoRepository(db *gorm.DB) PhotoRepository {
 	return &photoRepository{db: db}
+}
+
+func (r *photoRepository) FindByIdAndByUserId(id string, userId uint) (*domain.Photo, error) {
+	var photo domain.Photo
+	err := r.db.Preload("Comments").First(&photo, "id = ? AND user_id = ?", id, userId).Error
+	if err != nil {
+		return &photo, err
+	}
+
+	return &photo, nil
+}
+
+func (r *photoRepository) FindByUserId(id uint) ([]domain.Photo, error) {
+	var photos []domain.Photo
+	err := r.db.Debug().Preload("Comments").Find(&photos, "user_id = ?", id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Fatal("photo not found")
+		}
+		log.Fatal("error getting data :", err)
+	}
+
+	return photos, err
 }
