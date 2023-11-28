@@ -25,18 +25,18 @@ var userSet = wire.NewSet(
 )
 
 var photoSet = wire.NewSet(
-	repository.NewPhotoRepository,
-	repository.NewCommentRepository,
+	repositoryImpl.NewPhotoRepository,
+	repositoryImpl.NewCommentRepository,
 	repositoryImpl.NewTagRepositoryImpl,
 	repositoryImpl.NewPhotoTagsRepositoryImpl,
-	usecase.NewPhotoUsecase,
+	usecaseImpl.NewPhotoUsecase,
 	handler.NewPhotoHandler,
 )
 var commentSet = wire.NewSet(
-	repository.NewCommentRepository, repository.NewPhotoRepository, usecase.NewCommentUsecase, handler.NewCommentHandler,
+	repositoryImpl.NewCommentRepository, repositoryImpl.NewPhotoRepository, usecaseImpl.NewCommentUsecase, handler.NewCommentHandler,
 )
 
-var likesSet = wire.NewSet(repository.NewUserLikesPhotoRepository, repository.NewPhotoRepository, usecase.NewUserLikesPhotosUsecase, handler.NewUserLikesPhotosHandler)
+var likesSet = wire.NewSet(repository.NewUserLikesPhotoRepository, repositoryImpl.NewPhotoRepository, usecase.NewUserLikesPhotosUsecase, handler.NewUserLikesPhotosHandler)
 
 func initializedLikesHandler() handler.UserLikesPhotosHandler {
 	wire.Build(config.InitializeDB, validator.New, likesSet)

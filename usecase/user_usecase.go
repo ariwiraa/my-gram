@@ -2,16 +2,16 @@ package usecase
 
 import (
 	"errors"
+	"github.com/ariwiraa/my-gram/domain/dtos/request"
 
 	"github.com/ariwiraa/my-gram/domain"
-	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/repository"
 )
 
 type UserUsecase interface {
-	Register(payload dtos.UserRequest) (domain.User, error)
-	Login(payload dtos.UserLogin) (domain.User, error)
+	Register(payload request.UserRegister) (domain.User, error)
+	Login(payload request.UserLogin) (domain.User, error)
 }
 
 type userUsecase struct {
@@ -19,7 +19,7 @@ type userUsecase struct {
 }
 
 // Login implements UserUsecase
-func (u *userUsecase) Login(payload dtos.UserLogin) (domain.User, error) {
+func (u *userUsecase) Login(payload request.UserLogin) (domain.User, error) {
 	username := payload.Username
 	password := payload.Password
 
@@ -41,7 +41,7 @@ func (u *userUsecase) Login(payload dtos.UserLogin) (domain.User, error) {
 }
 
 // Register implements UserUsecase
-func (u *userUsecase) Register(payload dtos.UserRequest) (domain.User, error) {
+func (u *userUsecase) Register(payload request.UserRegister) (domain.User, error) {
 	var user domain.User
 
 	isEmailUsed, _ := u.userRepository.IsEmailExists(payload.Email)

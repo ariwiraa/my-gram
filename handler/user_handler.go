@@ -1,10 +1,10 @@
 package handler
 
 import (
+	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"net/http"
 
 	"github.com/ariwiraa/my-gram/domain"
-	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
 	"github.com/gin-gonic/gin"
@@ -85,7 +85,7 @@ func (h *userHandler) LogoutHandler(ctx *gin.Context) {
 // @Router /signin [post]
 // PostUserLoginHandler implements UserHandler
 func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
-	var payload dtos.UserLogin
+	var payload request.UserLogin
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
@@ -119,14 +119,14 @@ func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
 // @Tags user
 // @Accept json
 // @Produce json
-// @Param register body dtos.UserRequest true "create account"
+// @Param register body dtos.UserRegister true "create account"
 // @Success 200 {object} helpers.SuccessResult{data=domain.User,code=int,message=string}
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
 // @Success 500 {object} helpers.InternalServerError{code=int,message=string}
 // @Router /signup [post]
 // PostUserRegisterHandler implements UserHandler
 func (h *userHandler) PostUserRegisterHandler(ctx *gin.Context) {
-	var payload dtos.UserRequest
+	var payload request.UserRegister
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
