@@ -1,11 +1,11 @@
 package handler
 
 import (
+	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"net/http"
 	"strconv"
 
 	"github.com/ariwiraa/my-gram/domain"
-	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
 	"github.com/dgrijalva/jwt-go"
@@ -110,7 +110,7 @@ func (h *commentHandler) GetCommentsHandler(ctx *gin.Context) {
 // @Router /comment [post]
 // PostCommentHandler implements CommentHandler
 func (h *commentHandler) PostCommentHandler(ctx *gin.Context) {
-	var payload dtos.CommentRequest
+	var payload request.CommentRequest
 
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userID := uint(userData["id"].(float64))
@@ -159,7 +159,7 @@ func (h *commentHandler) PutCommentHandler(ctx *gin.Context) {
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userID := uint(userData["id"].(float64))
 
-	var payload dtos.CommentRequest
+	var payload request.CommentRequest
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())

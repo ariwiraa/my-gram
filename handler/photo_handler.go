@@ -2,9 +2,9 @@ package handler
 
 import (
 	"fmt"
+	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"net/http"
 
-	"github.com/ariwiraa/my-gram/domain/dtos"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
 	"github.com/dgrijalva/jwt-go"
@@ -135,7 +135,7 @@ func (h *photoHandler) GetPhotosByUserIdHandler(ctx *gin.Context) {
 // @Router /photo [post]
 // PostPhotoHandler implements PhotoHandler
 func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
-	var payload dtos.PhotoRequest
+	var payload request.PhotoRequest
 
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userID := uint(userData["Id"].(float64))
@@ -202,7 +202,7 @@ func (h *photoHandler) PutPhotoHandler(ctx *gin.Context) {
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userID := uint(userData["Id"].(float64))
 
-	var payload dtos.UpdatePhotoRequest
+	var payload request.UpdatePhotoRequest
 	err := ctx.ShouldBindWith(&payload, binding.FormMultipart)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())

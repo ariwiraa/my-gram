@@ -1,4 +1,4 @@
-package dtos
+package request
 
 import "mime/multipart"
 

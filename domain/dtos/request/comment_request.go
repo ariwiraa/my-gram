@@ -1,4 +1,4 @@
-package dtos
+package request
 
 type CommentRequest struct {
 	Message string `validate:"required" json:"message"`
