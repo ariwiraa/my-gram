@@ -33,7 +33,7 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 	router.DELETE("/signout", middlewares.Authentication(), userHandler.LogoutHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	photo := router.Group("/photo")
+	photo := router.Group("/photos")
 	{
 		photo.Use(middlewares.Authentication())
 		photo.POST("", photoHandler.PostPhotoHandler)
@@ -43,16 +43,13 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 		photo.PUT("/:id", photoHandler.PutPhotoHandler)
 		photo.DELETE("/:id", photoHandler.DeletePhotoHandler)
 		photo.POST("/:id/likes", likesHandler.PostLikesHandler)
-	}
 
-	comment := router.Group("/comment")
-	{
-		comment.Use(middlewares.Authentication())
-		comment.POST("", commentHandler.PostCommentHandler)
-		comment.GET("", commentHandler.GetCommentsHandler)
-		comment.GET("/:id", commentHandler.GetCommentHandler)
-		comment.PUT("/:id", commentHandler.PutCommentHandler)
-		comment.DELETE("/:id", commentHandler.DeleteCommentHandler)
+		// Comments
+		photo.POST("/:id/comments", commentHandler.PostCommentHandler)
+		photo.GET("/:id/comments", commentHandler.GetCommentsHandler)
+		photo.GET("/:id/comments/:commentId", commentHandler.GetCommentHandler)
+		photo.PUT("/:id/comments/:commentId", commentHandler.PutCommentHandler)
+		photo.DELETE("/:id/comments/:commentId", commentHandler.DeleteCommentHandler)
 	}
 
 	return router

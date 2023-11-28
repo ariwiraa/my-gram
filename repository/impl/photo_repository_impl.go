@@ -30,7 +30,7 @@ func (r *photoRepository) IsPhotoExist(id string) error {
 	var photo domain.Photo
 	err := r.db.Debug().First(&photo, "id = ?", id).Error
 	if err != nil {
-		return err
+		return errors.New("id photo doesn't exists")
 	}
 
 	return nil

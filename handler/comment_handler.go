@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
 	"github.com/dgrijalva/jwt-go"
@@ -40,12 +39,12 @@ type commentHandler struct {
 // @Router /comment/{id} [delete]
 // DeleteCommentHandler implements CommentHandler
 func (h *commentHandler) DeleteCommentHandler(ctx *gin.Context) {
-	var comment domain.Comment
-	requestParam := ctx.Param("id")
-	commentId, _ := strconv.Atoi(requestParam)
-	comment.ID = uint(commentId)
+	photoId := ctx.Param("id")
 
-	h.commentUsecase.Delete(comment)
+	requestParam := ctx.Param("commentId")
+	commentId, _ := strconv.Atoi(requestParam)
+
+	h.commentUsecase.Delete(uint(commentId), photoId)
 	helpers.SuccessResponse(ctx, http.StatusOK, nil)
 }
 
@@ -63,10 +62,11 @@ func (h *commentHandler) DeleteCommentHandler(ctx *gin.Context) {
 // @Router /comment/{id} [get]
 // GetCommentHandler implements CommentHandler
 func (h *commentHandler) GetCommentHandler(ctx *gin.Context) {
-	requestParam := ctx.Param("id")
+	photoId := ctx.Param("id")
+	requestParam := ctx.Param("commentId")
 	commentId, _ := strconv.Atoi(requestParam)
 
-	comment, err := h.commentUsecase.GetById(uint(commentId))
+	comment, err := h.commentUsecase.GetById(uint(commentId), photoId)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 	}
@@ -88,7 +88,9 @@ func (h *commentHandler) GetCommentHandler(ctx *gin.Context) {
 // @Router /comment [get]
 // GetCommentsHandler implements CommentHandler
 func (h *commentHandler) GetCommentsHandler(ctx *gin.Context) {
-	comments, err := h.commentUsecase.GetAll()
+	photoId := ctx.Param("id")
+
+	comments, err := h.commentUsecase.GetAllCommentsByPhotoId(photoId)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 	}
@@ -112,8 +114,12 @@ func (h *commentHandler) GetCommentsHandler(ctx *gin.Context) {
 func (h *commentHandler) PostCommentHandler(ctx *gin.Context) {
 	var payload request.CommentRequest
 
+	photoId := ctx.Param("id")
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
-	userID := uint(userData["id"].(float64))
+	userID := uint(userData["Id"].(float64))
+
+	payload.UserId = userID
+	payload.PhotoId = photoId
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
@@ -128,7 +134,7 @@ func (h *commentHandler) PostCommentHandler(ctx *gin.Context) {
 		return
 	}
 
-	comment, err := h.commentUsecase.Create(payload, userID)
+	comment, err := h.commentUsecase.Create(payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -153,13 +159,18 @@ func (h *commentHandler) PostCommentHandler(ctx *gin.Context) {
 // @Router /comment/{id} [put]
 // PutCommentHandler implements CommentHandler
 func (h *commentHandler) PutCommentHandler(ctx *gin.Context) {
-	requestParam := ctx.Param("id")
+	photoId := ctx.Param("id")
+
+	requestParam := ctx.Param("commentId")
 	commentId, _ := strconv.Atoi(requestParam)
 
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
-	userID := uint(userData["id"].(float64))
+	userID := uint(userData["Id"].(float64))
 
 	var payload request.CommentRequest
+	payload.PhotoId = photoId
+	payload.UserId = userID
+
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
@@ -173,7 +184,7 @@ func (h *commentHandler) PutCommentHandler(ctx *gin.Context) {
 		return
 	}
 
-	comment, err := h.commentUsecase.Update(payload, uint(commentId), userID)
+	comment, err := h.commentUsecase.Update(payload, uint(commentId))
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return

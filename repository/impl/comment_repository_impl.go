@@ -5,7 +5,6 @@ import (
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/repository"
 	"gorm.io/gorm"
-	"log"
 )
 
 type commentRepository struct {
@@ -28,13 +27,13 @@ func NewCommentRepository(db *gorm.DB) repository.CommentRepository {
 }
 
 // Create implements CommentRepository
-func (r *commentRepository) Create(comment domain.Comment) (domain.Comment, error) {
+func (r *commentRepository) Create(comment domain.Comment) (*domain.Comment, error) {
 	err := r.db.Debug().Create(&comment).Error
 	if err != nil {
-		return comment, err
+		return &comment, err
 	}
 
-	return comment, nil
+	return &comment, nil
 }
 
 // Delete implements CommentRepository
@@ -43,43 +42,41 @@ func (r *commentRepository) Delete(id uint) {
 
 	err := r.db.Debug().Where("id = ?", id).Delete(&comment).Error
 	if err != nil {
-		log.Fatalln("error deleting data", err)
 		return
 	}
 }
 
 // FindAll implements CommentRepository
-func (r *commentRepository) FindAll() ([]domain.Comment, error) {
+func (r *commentRepository) FindAllCommentsByPhotoId(photoId string) ([]domain.Comment, error) {
 	var comments []domain.Comment
 
-	err := r.db.Debug().Find(&comments).Error
+	err := r.db.Debug().Find(&comments, "photo_id = ?", photoId).Error
 	if err != nil {
-		log.Fatal("error getting all comments data: ", err)
+		return comments, errors.New("photo doesn't exists")
 	}
 	return comments, nil
 }
 
 // FindById implements CommentRepository
-func (r *commentRepository) FindById(id uint) (domain.Comment, error) {
+func (r *commentRepository) FindById(id uint) (*domain.Comment, error) {
 	var comment domain.Comment
 	err := r.db.Debug().First(&comment, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Fatal("comment not found")
+			return &comment, errors.New("comment doesn't exists")
 		}
-		log.Fatal("error getting data :", err)
 	}
 
-	return comment, err
+	return &comment, err
 }
 
 // Update implements CommentRepository
-func (r *commentRepository) Update(comment domain.Comment, id uint) (domain.Comment, error) {
+func (r *commentRepository) Update(comment domain.Comment, id uint) (*domain.Comment, error) {
 
 	err := r.db.Debug().Model(&comment).Where("id = ?", id).Updates(&comment).Error
 	if err != nil {
-		return comment, err
+		return &comment, err
 	}
 
-	return comment, nil
+	return &comment, nil
 }

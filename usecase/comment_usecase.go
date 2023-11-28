@@ -6,9 +6,9 @@ import (
 )
 
 type CommentUsecase interface {
-	Create(payload request.CommentRequest, userId uint) (domain.Comment, error)
-	GetById(id uint) (domain.Comment, error)
-	GetAll() ([]domain.Comment, error)
-	Update(payload request.CommentRequest, id uint, userId uint) (domain.Comment, error)
-	Delete(comment domain.Comment)
+	Create(payload request.CommentRequest) (*domain.Comment, error)
+	GetById(id uint, photoId string) (*domain.Comment, error)
+	GetAllCommentsByPhotoId(photoId string) ([]domain.Comment, error)
+	Update(payload request.CommentRequest, id uint) (*domain.Comment, error)
+	Delete(id uint, photoId string)
 }

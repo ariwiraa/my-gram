@@ -12,4 +12,6 @@ type Comment struct {
 	UserId    uint   `json:"user_id"`
 	CreatedAt *time.Time
 	UpdatedAt *time.Time
+	User      User  `gorm:"foreignKey:UserId" json:"-"`
+	Photo     Photo `gorm:"foreignKey:PhotoId" json:"-"`
 }

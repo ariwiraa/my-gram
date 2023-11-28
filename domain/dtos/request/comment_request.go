@@ -2,5 +2,6 @@ package request
 
 type CommentRequest struct {
 	Message string `validate:"required" json:"message"`
-	PhotoId string `validate:"required" json:"photo_id"`
+	PhotoId string
+	UserId  uint
 }
