@@ -36,7 +36,7 @@ var commentSet = wire.NewSet(
 	repositoryImpl.NewCommentRepository, repositoryImpl.NewPhotoRepository, usecaseImpl.NewCommentUsecase, handler.NewCommentHandler,
 )
 
-var likesSet = wire.NewSet(repository.NewUserLikesPhotoRepository, repositoryImpl.NewPhotoRepository, usecase.NewUserLikesPhotosUsecase, handler.NewUserLikesPhotosHandler)
+var likesSet = wire.NewSet(repositoryImpl.NewUserLikesPhotoRepository, repositoryImpl.NewPhotoRepository, repository.NewUserRepository, usecaseImpl.NewUserLikesPhotosUsecase, handler.NewUserLikesPhotosHandler)
 
 func initializedLikesHandler() handler.UserLikesPhotosHandler {
 	wire.Build(config.InitializeDB, validator.New, likesSet)
