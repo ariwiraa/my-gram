@@ -13,4 +13,5 @@ type PhotoRepository interface {
 	Update(photo domain.Photo, id string) (domain.Photo, error)
 	Delete(photo domain.Photo)
 	IsPhotoExist(id string) error
+	FindPhotosByIDList(photoIds []string) ([]domain.Photo, error)
 }

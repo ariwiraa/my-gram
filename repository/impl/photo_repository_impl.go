@@ -5,8 +5,13 @@ import (
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/repository"
 	"gorm.io/gorm"
-	"log"
 )
+
+func (r *photoRepository) FindPhotosByIDList(photoIds []string) ([]domain.Photo, error) {
+	var photos []domain.Photo
+	err := r.db.Debug().Preload("User").Preload("Comments").Find(&photos, "id IN ?", photoIds).Error
+	return photos, err
+}
 
 func (r *photoRepository) FindByUserId(id uint) ([]domain.Photo, error) {
 	var photos []domain.Photo
@@ -67,13 +72,10 @@ func (r *photoRepository) FindById(id string) (domain.Photo, error) {
 	var photo domain.Photo
 	err := r.db.Debug().Preload("User").Preload("Comments").First(&photo, "id = ?", id).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Fatal("photo not found")
-		}
-		log.Fatal("error getting data :", err)
+		return photo, err
 	}
 
-	return photo, err
+	return photo, nil
 }
 
 // Update implements PhotoRepository

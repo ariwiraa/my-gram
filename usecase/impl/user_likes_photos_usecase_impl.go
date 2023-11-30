@@ -21,15 +21,14 @@ func (u *userLikesPhotosUsecase) GetPhotosLikedByUserId(userId uint) ([]domain.P
 
 	likedPhotos := user.LikedPhotos
 
-	var photos []domain.Photo
+	var photoIds []string
 	for _, likedPhoto := range likedPhotos {
-		photo, err := u.photoRepository.FindById(likedPhoto.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		photos = append(photos, photo)
+		photoIds = append(photoIds, likedPhoto.ID)
 	}
+	// Function FindPhotosByIDList menggunakan IN bukan WHERE
+	// Karena IN bisa mengambil semua id dengan satu kali call database daripada where yg harus berkali kali
+	// Jadi harus dihindari call database di dalam loop
+	photos, err := u.photoRepository.FindPhotosByIDList(photoIds)
 
 	return photos, nil
 }
@@ -78,14 +77,14 @@ func (u *userLikesPhotosUsecase) GetUsersWhoLikedPhotoByPhotoId(photoId string) 
 
 	likedUsers := photo.LikedBy
 
-	var users []domain.User
+	var userIds []uint
 	for _, likedUser := range likedUsers {
-		user, err := u.userRepository.FindById(likedUser.ID)
-		if err != nil {
-			return nil, err
-		}
+		userIds = append(userIds, likedUser.ID)
+	}
 
-		users = append(users, *user)
+	users, err := u.userRepository.FindUsersByIDList(userIds)
+	if err != nil {
+		return users, err
 	}
 
 	return users, nil
