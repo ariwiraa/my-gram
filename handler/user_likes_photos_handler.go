@@ -12,11 +12,38 @@ import (
 
 type UserLikesPhotosHandler interface {
 	PostLikesHandler(ctx *gin.Context)
+	GetUsersWhoLikedPhotosHandler(ctx *gin.Context)
+	GetPhotosLikedHandler(ctx *gin.Context)
 }
 
 type userLikesPhotosHandler struct {
 	likesUsecase usecase.UserLikesPhotosUsecase
 	validate     *validator.Validate
+}
+
+func (h *userLikesPhotosHandler) GetPhotosLikedHandler(ctx *gin.Context) {
+	userData := ctx.MustGet("userData").(jwt.MapClaims)
+	userId := uint(userData["Id"].(float64))
+
+	likes, err := h.likesUsecase.GetPhotosLikedByUserId(userId)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helpers.SuccessResponse(ctx, http.StatusOK, likes)
+}
+
+func (h *userLikesPhotosHandler) GetUsersWhoLikedPhotosHandler(ctx *gin.Context) {
+	photoId := ctx.Param("id")
+
+	users, err := h.likesUsecase.GetUsersWhoLikedPhotoByPhotoId(photoId)
+	if err != nil {
+		helpers.FailResponse(ctx, 400, err.Error())
+		return
+	}
+
+	helpers.SuccessResponse(ctx, 200, users)
 }
 
 // LikePhoto godoc
@@ -36,7 +63,7 @@ func (h *userLikesPhotosHandler) PostLikesHandler(ctx *gin.Context) {
 	photoId := ctx.Param("id")
 
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
-	userId := uint(userData["id"].(float64))
+	userId := uint(userData["Id"].(float64))
 
 	likes, err := h.likesUsecase.LikeThePhoto(photoId, userId)
 	if err != nil {

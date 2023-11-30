@@ -5,20 +5,22 @@ import (
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/repository"
 	"gorm.io/gorm"
-	"log"
 )
+
+func (r *photoRepository) FindPhotosByIDList(photoIds []string) ([]domain.Photo, error) {
+	var photos []domain.Photo
+	err := r.db.Debug().Preload("User").Preload("Comments").Find(&photos, "id IN ?", photoIds).Error
+	return photos, err
+}
 
 func (r *photoRepository) FindByUserId(id uint) ([]domain.Photo, error) {
 	var photos []domain.Photo
 	err := r.db.Debug().Preload("Comments").Find(&photos, "user_id = ?", id).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Fatal("photo not found")
-		}
-		log.Fatal("error getting data :", err)
+		return photos, err
 	}
 
-	return photos, err
+	return photos, nil
 }
 
 type photoRepository struct {
@@ -50,7 +52,6 @@ func (r *photoRepository) Create(photo domain.Photo) (domain.Photo, error) {
 func (r *photoRepository) Delete(photo domain.Photo) {
 	err := r.db.Debug().Where("id = ?", photo.ID).Delete(&photo).Error
 	if err != nil {
-		log.Fatalln("error deleting data", err)
 		return
 	}
 }
@@ -61,7 +62,7 @@ func (r *photoRepository) FindAll() ([]domain.Photo, error) {
 
 	err := r.db.Debug().Find(&photos).Error
 	if err != nil {
-		log.Fatal("error getting all photos data: ", err)
+		return photos, err
 	}
 	return photos, nil
 }
@@ -69,15 +70,12 @@ func (r *photoRepository) FindAll() ([]domain.Photo, error) {
 // FindById implements PhotoRepository
 func (r *photoRepository) FindById(id string) (domain.Photo, error) {
 	var photo domain.Photo
-	err := r.db.Debug().Preload("Comments").First(&photo, "id = ?", id).Error
+	err := r.db.Debug().Preload("User").Preload("Comments").First(&photo, "id = ?", id).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Fatal("photo not found")
-		}
-		log.Fatal("error getting data :", err)
+		return photo, err
 	}
 
-	return photo, err
+	return photo, nil
 }
 
 // Update implements PhotoRepository

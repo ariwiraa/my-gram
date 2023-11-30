@@ -7,5 +7,4 @@ type UserLikesPhoto struct {
 	UserId    uint   `gorm:"not null" json:"user_id"`
 	PhotoId   string `gorm:"not null" json:"photo_id"`
 	CreatedAt *time.Time
-	UpdatedAt *time.Time
 }

@@ -8,12 +8,23 @@ import (
 type UserRepository interface {
 	AddUser(user domain.User) (domain.User, error)
 	FindByUsername(username string) (domain.User, error)
+	FindUsersByIDList(id []uint) ([]domain.User, error)
 	IsUsernameExists(username string) (bool, error)
 	IsEmailExists(email string) (bool, error)
 }
 
 type userRepository struct {
 	db *gorm.DB
+}
+
+func (r *userRepository) FindUsersByIDList(userIds []uint) ([]domain.User, error) {
+	var users []domain.User
+	err := r.db.Debug().Preload("Photos").Find(&users, "users.id IN ?", userIds).Error
+	if err != nil {
+		return users, err
+	}
+
+	return users, nil
 }
 
 // IsEmailExists implements UserRepository

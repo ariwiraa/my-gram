@@ -35,6 +35,7 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 
 	photo := router.Group("/photos")
 	{
+		// Photo
 		photo.Use(middlewares.Authentication())
 		photo.POST("", photoHandler.PostPhotoHandler)
 		photo.GET("/all", photoHandler.GetPhotosHandler)
@@ -42,7 +43,10 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 		photo.GET("/:id", photoHandler.GetPhotoHandler)
 		photo.PUT("/:id", photoHandler.PutPhotoHandler)
 		photo.DELETE("/:id", photoHandler.DeletePhotoHandler)
+
+		// Likes Photo
 		photo.POST("/:id/likes", likesHandler.PostLikesHandler)
+		photo.GET("/:id/likes", likesHandler.GetUsersWhoLikedPhotosHandler)
 
 		// Comments
 		photo.POST("/:id/comments", commentHandler.PostCommentHandler)
@@ -50,6 +54,12 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 		photo.GET("/:id/comments/:commentId", commentHandler.GetCommentHandler)
 		photo.PUT("/:id/comments/:commentId", commentHandler.PutCommentHandler)
 		photo.DELETE("/:id/comments/:commentId", commentHandler.DeleteCommentHandler)
+	}
+
+	me := router.Group("/me")
+	{
+		me.Use(middlewares.Authentication())
+		me.GET("/liked/photos", likesHandler.GetPhotosLikedHandler)
 	}
 
 	return router

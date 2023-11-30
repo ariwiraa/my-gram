@@ -23,9 +23,10 @@ import (
 
 func initializedLikesHandler() handler.UserLikesPhotosHandler {
 	db := config.InitializeDB()
-	userLikesPhotoRepository := repository.NewUserLikesPhotoRepository(db)
+	userLikesPhotoRepository := impl.NewUserLikesPhotoRepository(db)
 	photoRepository := impl.NewPhotoRepository(db)
-	userLikesPhotosUsecase := usecase.NewUserLikesPhotosUsecase(userLikesPhotoRepository, photoRepository)
+	userRepository := repository.NewUserRepository(db)
+	userLikesPhotosUsecase := impl2.NewUserLikesPhotosUsecase(userLikesPhotoRepository, photoRepository, userRepository)
 	validate := validator.New()
 	userLikesPhotosHandler := handler.NewUserLikesPhotosHandler(userLikesPhotosUsecase, validate)
 	return userLikesPhotosHandler
@@ -83,4 +84,4 @@ var photoSet = wire.NewSet(impl.NewPhotoRepository, impl.NewCommentRepository, i
 
 var commentSet = wire.NewSet(impl.NewCommentRepository, impl.NewPhotoRepository, impl2.NewCommentUsecase, handler.NewCommentHandler)
 
-var likesSet = wire.NewSet(repository.NewUserLikesPhotoRepository, impl.NewPhotoRepository, usecase.NewUserLikesPhotosUsecase, handler.NewUserLikesPhotosHandler)
+var likesSet = wire.NewSet(impl.NewUserLikesPhotoRepository, impl.NewPhotoRepository, repository.NewUserRepository, impl2.NewUserLikesPhotosUsecase, handler.NewUserLikesPhotosHandler)
