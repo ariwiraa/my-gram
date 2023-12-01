@@ -2,9 +2,8 @@ package usecase
 
 import (
 	"errors"
-	"github.com/ariwiraa/my-gram/domain/dtos/request"
-
 	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/repository"
 )

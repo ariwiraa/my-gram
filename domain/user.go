@@ -14,4 +14,6 @@ type User struct {
 	Photos      []Photo    `gorm:"foreignKey:UserId;" json:"-"`
 	Comments    []Comment  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"-"`
 	LikedPhotos []Photo    `gorm:"many2many:user_likes_photos" json:"-"`
+	Follower    []Follow   `gorm:"foreignKey:FollowerId" json:"-"`
+	Following   []Follow   `gorm:"foreignKey:FollowingId" json:"-"`
 }

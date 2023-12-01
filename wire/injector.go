@@ -16,6 +16,13 @@ import (
 	"github.com/google/wire"
 )
 
+var followsSet = wire.NewSet(
+	repositoryImpl.NewFollowRepositoryImpl,
+	repository.NewUserRepository,
+	usecaseImpl.NewFollowUsecaseImpl,
+	handler.NewFollowHandlerImpl,
+)
+
 var authenticationSet = wire.NewSet(
 	repositoryImpl.NewAuthenticationRepositoryImpl, usecaseImpl.NewAuthenticationUsecaseImpl,
 )
@@ -58,7 +65,12 @@ func initializedCommentHandler() handler.CommentHandler {
 	return nil
 }
 
+func initializedFollowHandler() handler.FollowHandler {
+	wire.Build(config.InitializeDB, followsSet)
+	return nil
+}
+
 func InitializedServer() *gin.Engine {
-	wire.Build(initializedUserHandler, initializedPhotoHandler, initializedCommentHandler, initializedLikesHandler, routes.NewRouter)
+	wire.Build(initializedUserHandler, initializedPhotoHandler, initializedCommentHandler, initializedLikesHandler, initializedFollowHandler, routes.NewRouter)
 	return nil
 }

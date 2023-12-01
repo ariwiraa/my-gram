@@ -11,5 +11,4 @@ type UserLikesPhotoRepository interface {
 	FindPhotoWhoLiked(photoId string) (*domain.Photo, error)
 	FindUserWhoLiked(userId uint) (*domain.User, error)
 	CountUsersWhoLikedPhotoByPhotoId(photoId string) (int64, error)
-	FindPhotosLikedByUserId(userId uint) ([]domain.Photo, error)
 }

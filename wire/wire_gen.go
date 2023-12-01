@@ -65,16 +65,28 @@ func initializedCommentHandler() handler.CommentHandler {
 	return commentHandler
 }
 
+func initializedFollowHandler() handler.FollowHandler {
+	db := config.InitializeDB()
+	followRepository := impl.NewFollowRepositoryImpl(db)
+	userRepository := repository.NewUserRepository(db)
+	followUsecase := impl2.NewFollowUsecaseImpl(followRepository, userRepository)
+	followHandler := handler.NewFollowHandlerImpl(followUsecase)
+	return followHandler
+}
+
 func InitializedServer() *gin.Engine {
 	userHandler := initializedUserHandler()
 	photoHandler := initializedPhotoHandler()
 	commentHandler := initializedCommentHandler()
 	userLikesPhotosHandler := initializedLikesHandler()
-	engine := routes.NewRouter(userHandler, photoHandler, commentHandler, userLikesPhotosHandler)
+	followHandler := initializedFollowHandler()
+	engine := routes.NewRouter(userHandler, photoHandler, commentHandler, userLikesPhotosHandler, followHandler)
 	return engine
 }
 
 // injector.go:
+
+var followsSet = wire.NewSet(impl.NewFollowRepositoryImpl, repository.NewUserRepository, impl2.NewFollowUsecaseImpl, handler.NewFollowHandlerImpl)
 
 var authenticationSet = wire.NewSet(impl.NewAuthenticationRepositoryImpl, impl2.NewAuthenticationUsecaseImpl)
 

@@ -11,10 +11,21 @@ type UserRepository interface {
 	FindUsersByIDList(id []uint) ([]domain.User, error)
 	IsUsernameExists(username string) (bool, error)
 	IsEmailExists(email string) (bool, error)
+	IsUserExists(id uint) error
 }
 
 type userRepository struct {
 	db *gorm.DB
+}
+
+func (r *userRepository) IsUserExists(id uint) error {
+	var user domain.User
+	err := r.db.Where("id = ?", id).First(&user).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *userRepository) FindUsersByIDList(userIds []uint) ([]domain.User, error) {
@@ -59,7 +70,7 @@ func (r *userRepository) IsUsernameExists(username string) (bool, error) {
 func (r *userRepository) FindByUsername(username string) (domain.User, error) {
 	var user domain.User
 	// err := r.db.Debug().Where("username = ?", username).Find(&user).Error
-	err := r.db.Debug().First(&user, "username = ?", username).Error
+	err := r.db.Preload("Photos").First(&user, "username = ?", username).Error
 	if err != nil {
 		return user, err
 	}

@@ -1,0 +1,11 @@
+package repository
+
+import (
+	"github.com/ariwiraa/my-gram/domain"
+)
+
+type FollowRepository interface {
+	Save(follow domain.Follow) error
+	Delete(follow domain.Follow) error
+	VerifyUserFollow(follow domain.Follow) (bool, error)
+}
