@@ -9,7 +9,6 @@ import (
 	"github.com/ariwiraa/my-gram/repository"
 	repositoryImpl "github.com/ariwiraa/my-gram/repository/impl"
 	"github.com/ariwiraa/my-gram/routes"
-	"github.com/ariwiraa/my-gram/usecase"
 	usecaseImpl "github.com/ariwiraa/my-gram/usecase/impl"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -24,11 +23,10 @@ var followsSet = wire.NewSet(
 )
 
 var authenticationSet = wire.NewSet(
-	repositoryImpl.NewAuthenticationRepositoryImpl, usecaseImpl.NewAuthenticationUsecaseImpl,
-)
-
-var userSet = wire.NewSet(
-	repository.NewUserRepository, usecase.NewUserUsecase, authenticationSet, handler.NewUserHandler,
+	repositoryImpl.NewAuthenticationRepositoryImpl,
+	repository.NewUserRepository,
+	usecaseImpl.NewAuthenticationUsecaseImpl,
+	handler.NewAuthHandler,
 )
 
 var photoSet = wire.NewSet(
@@ -50,8 +48,8 @@ func initializedLikesHandler() handler.UserLikesPhotosHandler {
 	return nil
 }
 
-func initializedUserHandler() handler.UserHandler {
-	wire.Build(config.InitializeDB, validator.New, userSet)
+func initializedAuthHandler() handler.AuthHandler {
+	wire.Build(config.InitializeDB, validator.New, authenticationSet)
 	return nil
 }
 
@@ -71,6 +69,12 @@ func initializedFollowHandler() handler.FollowHandler {
 }
 
 func InitializedServer() *gin.Engine {
-	wire.Build(initializedUserHandler, initializedPhotoHandler, initializedCommentHandler, initializedLikesHandler, initializedFollowHandler, routes.NewRouter)
+	wire.Build(initializedAuthHandler,
+		initializedPhotoHandler,
+		initializedCommentHandler,
+		initializedLikesHandler,
+		initializedFollowHandler,
+		routes.NewRouter,
+	)
 	return nil
 }

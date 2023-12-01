@@ -11,21 +11,20 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type UserHandler interface {
+type AuthHandler interface {
 	PostUserRegisterHandler(ctx *gin.Context)
 	PostUserLoginHandler(ctx *gin.Context)
 	PutAccessTokenHandler(ctx *gin.Context)
 	LogoutHandler(ctx *gin.Context)
 }
 
-type userHandler struct {
-	userUsecase usecase.UserUsecase
+type authHandler struct {
 	authUsecase usecase.AuthenticationUsecase
 	validate    *validator.Validate
 }
 
-// PutAccessTokenHandler implements UserHandler.
-func (h *userHandler) PutAccessTokenHandler(ctx *gin.Context) {
+// PutAccessTokenHandler implements AuthHandler.
+func (h *authHandler) PutAccessTokenHandler(ctx *gin.Context) {
 	var payload domain.Authentication
 
 	err := ctx.ShouldBindJSON(&payload)
@@ -53,8 +52,8 @@ func (h *userHandler) PutAccessTokenHandler(ctx *gin.Context) {
 
 }
 
-// Logout implements UserHandler.
-func (h *userHandler) LogoutHandler(ctx *gin.Context) {
+// Logout implements AuthHandler.
+func (h *authHandler) LogoutHandler(ctx *gin.Context) {
 	var payload domain.Authentication
 
 	err := ctx.ShouldBindJSON(&payload)
@@ -83,8 +82,8 @@ func (h *userHandler) LogoutHandler(ctx *gin.Context) {
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
 // @Success 500 {object} helpers.InternalServerError{code=int,message=string}
 // @Router /signin [post]
-// PostUserLoginHandler implements UserHandler
-func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
+// PostUserLoginHandler implements AuthHandler
+func (h *authHandler) PostUserLoginHandler(ctx *gin.Context) {
 	var payload request.UserLogin
 
 	err := ctx.ShouldBindJSON(&payload)
@@ -93,7 +92,7 @@ func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	loggedInUser, err := h.userUsecase.Login(payload)
+	loggedInUser, err := h.authUsecase.Login(payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusUnauthorized, err.Error())
 		return
@@ -124,8 +123,8 @@ func (h *userHandler) PostUserLoginHandler(ctx *gin.Context) {
 // @Failure 400 {object} helpers.BadRequest{code=int,message=string}
 // @Success 500 {object} helpers.InternalServerError{code=int,message=string}
 // @Router /signup [post]
-// PostUserRegisterHandler implements UserHandler
-func (h *userHandler) PostUserRegisterHandler(ctx *gin.Context) {
+// PostUserRegisterHandler implements AuthHandler
+func (h *authHandler) PostUserRegisterHandler(ctx *gin.Context) {
 	var payload request.UserRegister
 
 	err := ctx.ShouldBindJSON(&payload)
@@ -141,7 +140,7 @@ func (h *userHandler) PostUserRegisterHandler(ctx *gin.Context) {
 		return
 	}
 
-	newUser, err := h.userUsecase.Register(payload)
+	newUser, err := h.authUsecase.Register(payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -154,9 +153,8 @@ func (h *userHandler) PostUserRegisterHandler(ctx *gin.Context) {
 	})
 }
 
-func NewUserHandler(userUsecase usecase.UserUsecase, authUsecase usecase.AuthenticationUsecase, validate *validator.Validate) UserHandler {
-	return &userHandler{
-		userUsecase: userUsecase,
+func NewAuthHandler(authUsecase usecase.AuthenticationUsecase, validate *validator.Validate) AuthHandler {
+	return &authHandler{
 		authUsecase: authUsecase,
 		validate:    validate,
 	}

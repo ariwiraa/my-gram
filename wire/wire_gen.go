@@ -12,7 +12,6 @@ import (
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/repository/impl"
 	"github.com/ariwiraa/my-gram/routes"
-	"github.com/ariwiraa/my-gram/usecase"
 	impl2 "github.com/ariwiraa/my-gram/usecase/impl"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -32,15 +31,14 @@ func initializedLikesHandler() handler.UserLikesPhotosHandler {
 	return userLikesPhotosHandler
 }
 
-func initializedUserHandler() handler.UserHandler {
+func initializedAuthHandler() handler.AuthHandler {
 	db := config.InitializeDB()
-	userRepository := repository.NewUserRepository(db)
-	userUsecase := usecase.NewUserUsecase(userRepository)
 	authenticationRepository := impl.NewAuthenticationRepositoryImpl(db)
-	authenticationUsecase := impl2.NewAuthenticationUsecaseImpl(authenticationRepository)
+	userRepository := repository.NewUserRepository(db)
+	authenticationUsecase := impl2.NewAuthenticationUsecaseImpl(authenticationRepository, userRepository)
 	validate := validator.New()
-	userHandler := handler.NewUserHandler(userUsecase, authenticationUsecase, validate)
-	return userHandler
+	authHandler := handler.NewAuthHandler(authenticationUsecase, validate)
+	return authHandler
 }
 
 func initializedPhotoHandler() handler.PhotoHandler {
@@ -75,12 +73,12 @@ func initializedFollowHandler() handler.FollowHandler {
 }
 
 func InitializedServer() *gin.Engine {
-	userHandler := initializedUserHandler()
+	authHandler := initializedAuthHandler()
 	photoHandler := initializedPhotoHandler()
 	commentHandler := initializedCommentHandler()
 	userLikesPhotosHandler := initializedLikesHandler()
 	followHandler := initializedFollowHandler()
-	engine := routes.NewRouter(userHandler, photoHandler, commentHandler, userLikesPhotosHandler, followHandler)
+	engine := routes.NewRouter(authHandler, photoHandler, commentHandler, userLikesPhotosHandler, followHandler)
 	return engine
 }
 
@@ -88,9 +86,7 @@ func InitializedServer() *gin.Engine {
 
 var followsSet = wire.NewSet(impl.NewFollowRepositoryImpl, repository.NewUserRepository, impl2.NewFollowUsecaseImpl, handler.NewFollowHandlerImpl)
 
-var authenticationSet = wire.NewSet(impl.NewAuthenticationRepositoryImpl, impl2.NewAuthenticationUsecaseImpl)
-
-var userSet = wire.NewSet(repository.NewUserRepository, usecase.NewUserUsecase, authenticationSet, handler.NewUserHandler)
+var authenticationSet = wire.NewSet(impl.NewAuthenticationRepositoryImpl, repository.NewUserRepository, impl2.NewAuthenticationUsecaseImpl, handler.NewAuthHandler)
 
 var photoSet = wire.NewSet(impl.NewPhotoRepository, impl.NewCommentRepository, impl.NewTagRepositoryImpl, impl.NewPhotoTagsRepositoryImpl, impl2.NewPhotoUsecase, handler.NewPhotoHandler)
 
