@@ -67,7 +67,10 @@ func NewRouter(authHandler handler.AuthHandler, photoHandler handler.PhotoHandle
 	users := router.Group("/users")
 	{
 		users.Use(middlewares.Authentication())
+		// Follow
 		users.POST("/:id/follows", followsHandler.PostFollowHandler)
+		users.GET("/:username/followers", followsHandler.GetFollowersHandler)
+		users.GET("/:username/followings", followsHandler.GetFollowingsHandler)
 
 		// Profile
 		users.GET("/profile/:username", userHandler.GetUserProfileHandler)

@@ -10,6 +10,40 @@ type followRepositoryImpl struct {
 	db *gorm.DB
 }
 
+func (r *followRepositoryImpl) FindFollowingByUserId(userId uint) ([]domain.User, error) {
+	var followings []domain.User
+
+	err := r.db.Debug().Table("follows").
+		Select("users.*").
+		Joins("INNER JOIN users ON follows.following_id = users.id").
+		Where("follows.follower_id = ?", userId).
+		Find(&followings).
+		Error
+
+	if err != nil {
+		return followings, err
+	}
+
+	return followings, nil
+}
+
+func (r *followRepositoryImpl) FindFollowersByUserId(userId uint) ([]domain.User, error) {
+	var followers []domain.User
+
+	err := r.db.Debug().Table("follows").
+		Select("users.*").
+		Joins("INNER JOIN users ON follows.follower_id = users.id").
+		Where("follows.following_id = ?", userId).
+		Find(&followers).
+		Error
+
+	if err != nil {
+		return followers, err
+	}
+
+	return followers, nil
+}
+
 func (r *followRepositoryImpl) CountFollowerByUserId(userId uint) (int64, error) {
 	var totalFollower int64
 	err := r.db.Model(&domain.Follow{}).Where("following_id = ?", userId).Count(&totalFollower).Error

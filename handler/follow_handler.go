@@ -12,10 +12,36 @@ import (
 
 type FollowHandler interface {
 	PostFollowHandler(ctx *gin.Context)
+	GetFollowersHandler(ctx *gin.Context)
+	GetFollowingsHandler(ctx *gin.Context)
 }
 
 type followHandlerImpl struct {
 	followUsecase usecase.FollowUsecase
+}
+
+func (h *followHandlerImpl) GetFollowersHandler(ctx *gin.Context) {
+	username := ctx.Param("username")
+
+	followers, err := h.followUsecase.GetFollowersByUsername(username)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helpers.SuccessResponse(ctx, http.StatusOK, followers)
+}
+
+func (h *followHandlerImpl) GetFollowingsHandler(ctx *gin.Context) {
+	username := ctx.Param("username")
+
+	followings, err := h.followUsecase.GetFollowingsByUsername(username)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helpers.SuccessResponse(ctx, http.StatusOK, followings)
 }
 
 func (h *followHandlerImpl) PostFollowHandler(ctx *gin.Context) {
