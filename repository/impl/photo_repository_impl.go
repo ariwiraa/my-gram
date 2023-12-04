@@ -27,6 +27,16 @@ type photoRepository struct {
 	db *gorm.DB
 }
 
+func (r *photoRepository) CountPhotoByUserId(userId uint) (int64, error) {
+	var totalPosts int64
+	err := r.db.Model(&domain.Photo{}).Where("user_id = ?", userId).Count(&totalPosts).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return totalPosts, nil
+}
+
 // IsPhotoExist implements PhotoRepository
 func (r *photoRepository) IsPhotoExist(id string) error {
 	var photo domain.Photo

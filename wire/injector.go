@@ -9,19 +9,32 @@ import (
 	"github.com/ariwiraa/my-gram/repository"
 	repositoryImpl "github.com/ariwiraa/my-gram/repository/impl"
 	"github.com/ariwiraa/my-gram/routes"
-	"github.com/ariwiraa/my-gram/usecase"
 	usecaseImpl "github.com/ariwiraa/my-gram/usecase/impl"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/wire"
 )
 
-var authenticationSet = wire.NewSet(
-	repositoryImpl.NewAuthenticationRepositoryImpl, usecaseImpl.NewAuthenticationUsecaseImpl,
+var usersSet = wire.NewSet(
+	repository.NewUserRepository,
+	repositoryImpl.NewPhotoRepository,
+	repositoryImpl.NewFollowRepositoryImpl,
+	usecaseImpl.NewUserUsecaseImpl,
+	handler.NewUserHandlerImpl,
 )
 
-var userSet = wire.NewSet(
-	repository.NewUserRepository, usecase.NewUserUsecase, authenticationSet, handler.NewUserHandler,
+var followsSet = wire.NewSet(
+	repositoryImpl.NewFollowRepositoryImpl,
+	repository.NewUserRepository,
+	usecaseImpl.NewFollowUsecaseImpl,
+	handler.NewFollowHandlerImpl,
+)
+
+var authenticationSet = wire.NewSet(
+	repositoryImpl.NewAuthenticationRepositoryImpl,
+	repository.NewUserRepository,
+	usecaseImpl.NewAuthenticationUsecaseImpl,
+	handler.NewAuthHandler,
 )
 
 var photoSet = wire.NewSet(
@@ -43,8 +56,8 @@ func initializedLikesHandler() handler.UserLikesPhotosHandler {
 	return nil
 }
 
-func initializedUserHandler() handler.UserHandler {
-	wire.Build(config.InitializeDB, validator.New, userSet)
+func initializedAuthHandler() handler.AuthHandler {
+	wire.Build(config.InitializeDB, validator.New, authenticationSet)
 	return nil
 }
 
@@ -58,7 +71,24 @@ func initializedCommentHandler() handler.CommentHandler {
 	return nil
 }
 
+func initializedFollowHandler() handler.FollowHandler {
+	wire.Build(config.InitializeDB, followsSet)
+	return nil
+}
+
+func initializedUserHandler() handler.UserHandler {
+	wire.Build(config.InitializeDB, usersSet)
+	return nil
+}
+
 func InitializedServer() *gin.Engine {
-	wire.Build(initializedUserHandler, initializedPhotoHandler, initializedCommentHandler, initializedLikesHandler, routes.NewRouter)
+	wire.Build(initializedAuthHandler,
+		initializedPhotoHandler,
+		initializedCommentHandler,
+		initializedLikesHandler,
+		initializedFollowHandler,
+		initializedUserHandler,
+		routes.NewRouter,
+	)
 	return nil
 }

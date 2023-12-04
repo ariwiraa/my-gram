@@ -14,4 +14,5 @@ type PhotoRepository interface {
 	Delete(photo domain.Photo)
 	IsPhotoExist(id string) error
 	FindPhotosByIDList(photoIds []string) ([]domain.Photo, error)
+	CountPhotoByUserId(userId uint) (int64, error)
 }

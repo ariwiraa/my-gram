@@ -24,13 +24,15 @@ import (
 // @in                          header
 // @name                        Authorization
 // @description	How to input in swagger : 'Bearer <insert_your_token_here>'
-func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandler, commentHandler handler.CommentHandler, likesHandler handler.UserLikesPhotosHandler) *gin.Engine {
+func NewRouter(authHandler handler.AuthHandler, photoHandler handler.PhotoHandler,
+	commentHandler handler.CommentHandler, likesHandler handler.UserLikesPhotosHandler,
+	followsHandler handler.FollowHandler, userHandler handler.UserHandler) *gin.Engine {
 	router := gin.Default()
 
-	router.POST("/signup", userHandler.PostUserRegisterHandler)
-	router.POST("/signin", userHandler.PostUserLoginHandler)
-	router.PUT("/refresh", userHandler.PutAccessTokenHandler)
-	router.DELETE("/signout", middlewares.Authentication(), userHandler.LogoutHandler)
+	router.POST("/signup", authHandler.PostUserRegisterHandler)
+	router.POST("/signin", authHandler.PostUserLoginHandler)
+	router.PUT("/refresh", authHandler.PutAccessTokenHandler)
+	router.DELETE("/signout", middlewares.Authentication(), authHandler.LogoutHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	photo := router.Group("/photos")
@@ -60,6 +62,18 @@ func NewRouter(userHandler handler.UserHandler, photoHandler handler.PhotoHandle
 	{
 		me.Use(middlewares.Authentication())
 		me.GET("/liked/photos", likesHandler.GetPhotosLikedHandler)
+	}
+
+	users := router.Group("/users")
+	{
+		users.Use(middlewares.Authentication())
+		// Follow
+		users.POST("/:id/follows", followsHandler.PostFollowHandler)
+		users.GET("/:username/followers", followsHandler.GetFollowersHandler)
+		users.GET("/:username/followings", followsHandler.GetFollowingsHandler)
+
+		// Profile
+		users.GET("/profile/:username", userHandler.GetUserProfileHandler)
 	}
 
 	return router

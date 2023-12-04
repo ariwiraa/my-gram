@@ -52,36 +52,6 @@ func (r *userLikesPhotoRepository) DeleteLike(photoId string, userId uint) {
 	}
 }
 
-// GetLikedPhotoByUserId implements UserLikesPhotoRepository
-func (r *userLikesPhotoRepository) FindPhotosLikedByUserId(userId uint) ([]domain.Photo, error) {
-	var user domain.User
-
-	err := r.db.Preload("LikedPhotos").Where("user_id = ?", userId).First(&user).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return []domain.Photo{}, nil
-		}
-
-		return nil, err
-	}
-
-	likedPhotos := user.LikedPhotos
-
-	var photos []domain.Photo
-	for _, likedPhoto := range likedPhotos {
-		var photo domain.Photo
-
-		err := r.db.Preload("User").Preload("Comments").Where("id = ?", likedPhoto.ID).First(&photo).Error
-		if err != nil {
-			return nil, err
-		}
-
-		photos = append(photos, photo)
-	}
-
-	return photos, nil
-}
-
 // InsertLike implements UserLikesPhotoRepository
 func (r *userLikesPhotoRepository) InsertLike(userLikesPhoto domain.UserLikesPhoto) error {
 	err := r.db.Debug().Create(&userLikesPhoto).Error
