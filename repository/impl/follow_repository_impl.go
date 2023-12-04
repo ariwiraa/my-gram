@@ -10,7 +10,27 @@ type followRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func (r followRepositoryImpl) Save(follow domain.Follow) error {
+func (r *followRepositoryImpl) CountFollowerByUserId(userId uint) (int64, error) {
+	var totalFollower int64
+	err := r.db.Model(&domain.Follow{}).Where("following_id = ?", userId).Count(&totalFollower).Error
+	if err != nil {
+		return totalFollower, err
+	}
+
+	return totalFollower, nil
+}
+
+func (r *followRepositoryImpl) CountFollowingByUserId(userId uint) (int64, error) {
+	var totalFollower int64
+	err := r.db.Model(&domain.Follow{}).Where("follower_id = ?", userId).Count(&totalFollower).Error
+	if err != nil {
+		return totalFollower, err
+	}
+
+	return totalFollower, nil
+}
+
+func (r *followRepositoryImpl) Save(follow domain.Follow) error {
 	err := r.db.Create(&follow).Error
 	if err != nil {
 		return err
@@ -18,7 +38,7 @@ func (r followRepositoryImpl) Save(follow domain.Follow) error {
 	return nil
 }
 
-func (r followRepositoryImpl) Delete(follow domain.Follow) error {
+func (r *followRepositoryImpl) Delete(follow domain.Follow) error {
 	err := r.db.
 		Where("following_id = ? AND follower_id = ?", follow.FollowingId, follow.FollowerId).
 		Delete(&follow).
@@ -31,7 +51,7 @@ func (r followRepositoryImpl) Delete(follow domain.Follow) error {
 	return nil
 }
 
-func (r followRepositoryImpl) VerifyUserFollow(follow domain.Follow) (bool, error) {
+func (r *followRepositoryImpl) VerifyUserFollow(follow domain.Follow) (bool, error) {
 	err := r.db.
 		Where("following_id = ? AND follower_id = ?", follow.FollowingId, follow.FollowerId).
 		First(&follow).

@@ -69,8 +69,13 @@ func (r *userRepository) IsUsernameExists(username string) (bool, error) {
 // IsEmailExist implements UserRepository
 func (r *userRepository) FindByUsername(username string) (domain.User, error) {
 	var user domain.User
-	// err := r.db.Debug().Where("username = ?", username).Find(&user).Error
-	err := r.db.Preload("Photos").First(&user, "username = ?", username).Error
+	// TODO: pilih field dari tabel photos yang dibutuhkan saja
+	err := r.db.Preload("Photos", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id", "photo_url", "caption", "created_at", "user_id")
+	}).
+		First(&user, "username = ?", username).
+		Error
+
 	if err != nil {
 		return user, err
 	}

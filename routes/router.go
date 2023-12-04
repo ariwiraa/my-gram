@@ -26,7 +26,7 @@ import (
 // @description	How to input in swagger : 'Bearer <insert_your_token_here>'
 func NewRouter(authHandler handler.AuthHandler, photoHandler handler.PhotoHandler,
 	commentHandler handler.CommentHandler, likesHandler handler.UserLikesPhotosHandler,
-	followsHandler handler.FollowHandler) *gin.Engine {
+	followsHandler handler.FollowHandler, userHandler handler.UserHandler) *gin.Engine {
 	router := gin.Default()
 
 	router.POST("/signup", authHandler.PostUserRegisterHandler)
@@ -68,6 +68,9 @@ func NewRouter(authHandler handler.AuthHandler, photoHandler handler.PhotoHandle
 	{
 		users.Use(middlewares.Authentication())
 		users.POST("/:id/follows", followsHandler.PostFollowHandler)
+
+		// Profile
+		users.GET("/profile/:username", userHandler.GetUserProfileHandler)
 	}
 
 	return router

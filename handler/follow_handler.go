@@ -36,7 +36,7 @@ func (h *followHandlerImpl) PostFollowHandler(ctx *gin.Context) {
 
 	message, err := h.followUsecase.FollowUser(payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, message)
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
