@@ -42,6 +42,8 @@ var photoSet = wire.NewSet(
 	repositoryImpl.NewCommentRepository,
 	repositoryImpl.NewTagRepositoryImpl,
 	repositoryImpl.NewPhotoTagsRepositoryImpl,
+	repositoryImpl.NewUserLikesPhotoRepository,
+	repository.NewUserRepository,
 	usecaseImpl.NewPhotoUsecase,
 	handler.NewPhotoHandler,
 )

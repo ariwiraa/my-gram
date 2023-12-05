@@ -8,6 +8,7 @@ import (
 type UserRepository interface {
 	AddUser(user domain.User) (domain.User, error)
 	FindByUsername(username string) (domain.User, error)
+	FindById(id uint) (*domain.User, error)
 	FindUsersByIDList(id []uint) ([]domain.User, error)
 	IsUsernameExists(username string) (bool, error)
 	IsEmailExists(email string) (bool, error)
@@ -16,6 +17,16 @@ type UserRepository interface {
 
 type userRepository struct {
 	db *gorm.DB
+}
+
+func (r *userRepository) FindById(id uint) (*domain.User, error) {
+	var user domain.User
+	err := r.db.Where("id = ?", id).First(&user).Error
+	if err != nil {
+		return &user, err
+	}
+
+	return &user, nil
 }
 
 func (r *userRepository) IsUserExists(id uint) error {
