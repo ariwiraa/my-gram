@@ -47,7 +47,9 @@ func initializedPhotoHandler() handler.PhotoHandler {
 	commentRepository := impl.NewCommentRepository(db)
 	tagRepository := impl.NewTagRepositoryImpl(db)
 	photoTagsRepository := impl.NewPhotoTagsRepositoryImpl(db)
-	photoUsecase := impl2.NewPhotoUsecase(photoRepository, commentRepository, tagRepository, photoTagsRepository)
+	userLikesPhotoRepository := impl.NewUserLikesPhotoRepository(db)
+	userRepository := repository.NewUserRepository(db)
+	photoUsecase := impl2.NewPhotoUsecase(photoRepository, commentRepository, tagRepository, photoTagsRepository, userLikesPhotoRepository, userRepository)
 	validate := validator.New()
 	photoHandler := handler.NewPhotoHandler(photoUsecase, validate)
 	return photoHandler
@@ -101,7 +103,7 @@ var followsSet = wire.NewSet(impl.NewFollowRepositoryImpl, repository.NewUserRep
 
 var authenticationSet = wire.NewSet(impl.NewAuthenticationRepositoryImpl, repository.NewUserRepository, impl2.NewAuthenticationUsecaseImpl, handler.NewAuthHandler)
 
-var photoSet = wire.NewSet(impl.NewPhotoRepository, impl.NewCommentRepository, impl.NewTagRepositoryImpl, impl.NewPhotoTagsRepositoryImpl, impl2.NewPhotoUsecase, handler.NewPhotoHandler)
+var photoSet = wire.NewSet(impl.NewPhotoRepository, impl.NewCommentRepository, impl.NewTagRepositoryImpl, impl.NewPhotoTagsRepositoryImpl, impl.NewUserLikesPhotoRepository, repository.NewUserRepository, impl2.NewPhotoUsecase, handler.NewPhotoHandler)
 
 var commentSet = wire.NewSet(impl.NewCommentRepository, impl.NewPhotoRepository, impl2.NewCommentUsecase, handler.NewCommentHandler)
 

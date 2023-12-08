@@ -67,6 +67,7 @@ func (h *photoHandler) GetPhotoHandler(ctx *gin.Context) {
 	photo, err := h.photoUsecase.GetById(photoId)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	helpers.SuccessResponse(ctx, http.StatusOK, photo)

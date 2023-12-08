@@ -91,7 +91,7 @@ func (r *photoRepository) FindById(id string) (domain.Photo, error) {
 // Update implements PhotoRepository
 func (r *photoRepository) Update(photo domain.Photo, id string) (domain.Photo, error) {
 
-	err := r.db.Debug().Model(&photo).Where("id = ?", id).Updates(&photo).Error
+	err := r.db.Model(&photo).Where("id = ?", id).Updates(&photo).Error
 	if err != nil {
 		return photo, err
 	}
