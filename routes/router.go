@@ -11,6 +11,15 @@ import (
 	swaggerfiles "github.com/swaggo/files"
 )
 
+type RouterHandler struct {
+	AuthHandler    handler.AuthHandler
+	PhotoHandler   handler.PhotoHandler
+	CommentHandler handler.CommentHandler
+	LikesHandler   handler.UserLikesPhotosHandler
+	FollowsHandler handler.FollowHandler
+	UserHandler    handler.UserHandler
+}
+
 // @title Mygram
 // @version 1.0
 // @description This is a Final Project
@@ -24,56 +33,54 @@ import (
 // @in                          header
 // @name                        Authorization
 // @description	How to input in swagger : 'Bearer <insert_your_token_here>'
-func NewRouter(authHandler handler.AuthHandler, photoHandler handler.PhotoHandler,
-	commentHandler handler.CommentHandler, likesHandler handler.UserLikesPhotosHandler,
-	followsHandler handler.FollowHandler, userHandler handler.UserHandler) *gin.Engine {
+func NewRouter(routerHandler RouterHandler) *gin.Engine {
 	router := gin.Default()
 
-	router.POST("/signup", authHandler.PostUserRegisterHandler)
-	router.POST("/signin", authHandler.PostUserLoginHandler)
-	router.PUT("/refresh", authHandler.PutAccessTokenHandler)
-	router.DELETE("/signout", middlewares.Authentication(), authHandler.LogoutHandler)
+	router.POST("/signup", routerHandler.AuthHandler.PostUserRegisterHandler)
+	router.POST("/signin", routerHandler.AuthHandler.PostUserLoginHandler)
+	router.PUT("/refresh", routerHandler.AuthHandler.PutAccessTokenHandler)
+	router.DELETE("/signout", middlewares.Authentication(), routerHandler.AuthHandler.LogoutHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	photo := router.Group("/photos")
 	{
 		// Photo
 		photo.Use(middlewares.Authentication())
-		photo.POST("", photoHandler.PostPhotoHandler)
-		photo.GET("/all", photoHandler.GetPhotosHandler)
-		photo.GET("", photoHandler.GetPhotosByUserIdHandler)
-		photo.GET("/:id", photoHandler.GetPhotoHandler)
-		photo.PUT("/:id", photoHandler.PutPhotoHandler)
-		photo.DELETE("/:id", photoHandler.DeletePhotoHandler)
+		photo.POST("", routerHandler.PhotoHandler.PostPhotoHandler)
+		photo.GET("/all", routerHandler.PhotoHandler.GetPhotosHandler)
+		photo.GET("", routerHandler.PhotoHandler.GetPhotosByUserIdHandler)
+		photo.GET("/:id", routerHandler.PhotoHandler.GetPhotoHandler)
+		photo.PUT("/:id", routerHandler.PhotoHandler.PutPhotoHandler)
+		photo.DELETE("/:id", routerHandler.PhotoHandler.DeletePhotoHandler)
 
 		// Likes Photo
-		photo.POST("/:id/likes", likesHandler.PostLikesHandler)
-		photo.GET("/:id/likes", likesHandler.GetUsersWhoLikedPhotosHandler)
+		photo.POST("/:id/likes", routerHandler.LikesHandler.PostLikesHandler)
+		photo.GET("/:id/likes", routerHandler.LikesHandler.GetUsersWhoLikedPhotosHandler)
 
 		// Comments
-		photo.POST("/:id/comments", commentHandler.PostCommentHandler)
-		photo.GET("/:id/comments", commentHandler.GetCommentsHandler)
-		photo.GET("/:id/comments/:commentId", commentHandler.GetCommentHandler)
-		photo.PUT("/:id/comments/:commentId", commentHandler.PutCommentHandler)
-		photo.DELETE("/:id/comments/:commentId", commentHandler.DeleteCommentHandler)
+		photo.POST("/:id/comments", routerHandler.CommentHandler.PostCommentHandler)
+		photo.GET("/:id/comments", routerHandler.CommentHandler.GetCommentsHandler)
+		photo.GET("/:id/comments/:commentId", routerHandler.CommentHandler.GetCommentHandler)
+		photo.PUT("/:id/comments/:commentId", routerHandler.CommentHandler.PutCommentHandler)
+		photo.DELETE("/:id/comments/:commentId", routerHandler.CommentHandler.DeleteCommentHandler)
 	}
 
 	me := router.Group("/me")
 	{
 		me.Use(middlewares.Authentication())
-		me.GET("/liked/photos", likesHandler.GetPhotosLikedHandler)
+		me.GET("/liked/photos", routerHandler.LikesHandler.GetPhotosLikedHandler)
 	}
 
 	users := router.Group("/users")
 	{
 		users.Use(middlewares.Authentication())
 		// Follow
-		users.POST("/:id/follows", followsHandler.PostFollowHandler)
-		users.GET("/:username/followers", followsHandler.GetFollowersHandler)
-		users.GET("/:username/followings", followsHandler.GetFollowingsHandler)
+		users.POST("/:id/follows", routerHandler.FollowsHandler.PostFollowHandler)
+		users.GET("/:username/followers", routerHandler.FollowsHandler.GetFollowersHandler)
+		users.GET("/:username/followings", routerHandler.FollowsHandler.GetFollowingsHandler)
 
 		// Profile
-		users.GET("/profile/:username", userHandler.GetUserProfileHandler)
+		users.GET("/profile/:username", routerHandler.UserHandler.GetUserProfileHandler)
 	}
 
 	return router

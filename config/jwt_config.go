@@ -1,49 +1,50 @@
 package config
 
 import (
-	"log"
-	"os"
+	"fmt"
 	"strconv"
 	"time"
 )
 
-type config struct {
-	jwtTokenKey   string
-	jwtRefreshKey string
-	tokenExpiry   time.Duration
-	refreshExpiry time.Duration
+type jwtEnvironment struct {
+	JWTTokenKey   string
+	JWTRefreshKey string
+	TokenExpiry   string
+	RefreshExpiry string
 }
 
-var jwtConfig = new(config)
+type jwtConfig struct {
+	cfg Config
+}
 
-func init() {
-	intTokenExpiry, _ := strconv.Atoi(os.Getenv("TOKENEXPIRY"))
-	intRefreshExpiry, _ := strconv.Atoi(os.Getenv("REFRESHEXPIRY"))
-	jwtConfig.jwtTokenKey = os.Getenv("TOKENKEY")
-	if jwtConfig.jwtTokenKey == "" {
-		log.Println("Error: VARIABLE_NAME is not set or empty")
+func LoadJwtConfig() *jwtConfig {
+	cnf := InitializeConfig()
+	return &jwtConfig{
+		cfg: *cnf,
 	}
-	jwtConfig.jwtRefreshKey = os.Getenv("REFRESHKEY")
-	jwtConfig.tokenExpiry = time.Duration(intTokenExpiry) * time.Minute
-	jwtConfig.refreshExpiry = time.Duration(intRefreshExpiry) * time.Minute
+}
+func (c *jwtConfig) GetTokenKey() string {
+	return c.cfg.JWT.JWTTokenKey
 }
 
-func LoadJWTConfig() *config {
-	return jwtConfig
+func (c *jwtConfig) GetRefreshKey() string {
+	return c.cfg.JWT.JWTRefreshKey
 }
 
-func (jc *config) GetTokenExpiry() time.Duration {
-	return jwtConfig.tokenExpiry
+func (c *jwtConfig) GetTokenExpiry() time.Duration {
+	convertTokenExpiryToInt, err := strconv.Atoi(c.cfg.JWT.TokenExpiry)
+	if err != nil {
+		fmt.Errorf("error converting token expiry %s ", err.Error())
+	}
+	tokenExpiry := time.Duration(convertTokenExpiryToInt) * time.Minute
+	return tokenExpiry
 }
 
-func (jc *config) GetJWTTokenKey() string {
-	return jwtConfig.jwtTokenKey
-}
-
-func (jc *config) GetRefreshExpiry() time.Duration {
-	return jwtConfig.refreshExpiry
-}
-
-func (jc *config) GetJWTRefreshKey() string {
-	return jwtConfig.jwtRefreshKey
+func (c *jwtConfig) GetRefreshExpiry() time.Duration {
+	convertRefreshExpiryToInt, err := strconv.Atoi(c.cfg.JWT.RefreshExpiry)
+	if err != nil {
+		fmt.Errorf("error converting refresh expiry %s ", err.Error())
+	}
+	refreshExpiry := time.Duration(convertRefreshExpiryToInt) * time.Minute
+	return refreshExpiry
 }
