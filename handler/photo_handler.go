@@ -44,7 +44,7 @@ func (h *photoHandler) DeletePhotoHandler(ctx *gin.Context) {
 
 	photoId := ctx.Param("id")
 
-	h.photoUsecase.Delete(photoId)
+	h.photoUsecase.Delete(ctx.Request.Context(), photoId)
 	helpers.SuccessResponse(ctx, http.StatusOK, nil)
 }
 
@@ -64,7 +64,7 @@ func (h *photoHandler) DeletePhotoHandler(ctx *gin.Context) {
 func (h *photoHandler) GetPhotoHandler(ctx *gin.Context) {
 	photoId := ctx.Param("id")
 
-	photo, err := h.photoUsecase.GetById(photoId)
+	photo, err := h.photoUsecase.GetById(ctx.Request.Context(), photoId)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -88,7 +88,7 @@ func (h *photoHandler) GetPhotoHandler(ctx *gin.Context) {
 // @Router /photo [get]
 // GetPhotosHandler implements PhotoHandler
 func (h *photoHandler) GetPhotosHandler(ctx *gin.Context) {
-	photos, err := h.photoUsecase.GetAll()
+	photos, err := h.photoUsecase.GetAll(ctx.Request.Context())
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 	}
@@ -113,7 +113,7 @@ func (h *photoHandler) GetPhotosByUserIdHandler(ctx *gin.Context) {
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userID := uint(userData["Id"].(float64))
 
-	photo, err := h.photoUsecase.GetAllPhotosByUserId(userID)
+	photo, err := h.photoUsecase.GetAllPhotosByUserId(ctx.Request.Context(), userID)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 	}
@@ -173,7 +173,7 @@ func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
 		return
 	}
 
-	photo, err := h.photoUsecase.Create(payload, userID, path)
+	photo, err := h.photoUsecase.Create(ctx.Request.Context(), payload, userID, path)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -217,7 +217,7 @@ func (h *photoHandler) PutPhotoHandler(ctx *gin.Context) {
 		return
 	}
 
-	photo, err := h.photoUsecase.Update(payload, photoId, userID)
+	photo, err := h.photoUsecase.Update(ctx.Request.Context(), payload, photoId, userID)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return

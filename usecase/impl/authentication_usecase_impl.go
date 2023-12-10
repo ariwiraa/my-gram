@@ -1,12 +1,14 @@
 package impl
 
 import (
+	"context"
 	"errors"
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/usecase"
+	"time"
 )
 
 type authenticationUsecaseImpl struct {
@@ -14,15 +16,18 @@ type authenticationUsecaseImpl struct {
 	userRepository repository.UserRepository
 }
 
-func (u *authenticationUsecaseImpl) Register(payload request.UserRegister) (*domain.User, error) {
+func (u *authenticationUsecaseImpl) Register(ctx context.Context, payload request.UserRegister) (*domain.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	var user domain.User
 
-	isEmailUsed, _ := u.userRepository.IsEmailExists(payload.Email)
+	isEmailUsed, _ := u.userRepository.IsEmailExists(ctx, payload.Email)
 	if isEmailUsed {
 		return &user, errors.New("email sudah digunakan")
 	}
 
-	isUsernameUsed, _ := u.userRepository.IsUsernameExists(payload.Username)
+	isUsernameUsed, _ := u.userRepository.IsUsernameExists(ctx, payload.Username)
 	if isUsernameUsed {
 		return &user, errors.New("username sudah digunakan")
 	}
@@ -35,7 +40,7 @@ func (u *authenticationUsecaseImpl) Register(payload request.UserRegister) (*dom
 		Password: hashingPassword,
 	}
 
-	newUser, err := u.userRepository.AddUser(user)
+	newUser, err := u.userRepository.AddUser(ctx, user)
 	if err != nil {
 		return &newUser, err
 	}
@@ -43,11 +48,14 @@ func (u *authenticationUsecaseImpl) Register(payload request.UserRegister) (*dom
 	return &newUser, nil
 }
 
-func (u *authenticationUsecaseImpl) Login(payload request.UserLogin) (*domain.User, error) {
+func (u *authenticationUsecaseImpl) Login(ctx context.Context, payload request.UserLogin) (*domain.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	username := payload.Username
 	password := payload.Password
 
-	user, err := u.userRepository.FindByUsername(username)
+	user, err := u.userRepository.FindByUsername(ctx, username)
 	if err != nil {
 		return &user, err
 	}
@@ -65,12 +73,15 @@ func (u *authenticationUsecaseImpl) Login(payload request.UserLogin) (*domain.Us
 }
 
 // Add implements usecase.AuthenticationUsecase.
-func (u *authenticationUsecaseImpl) Add(token string) error {
+func (u *authenticationUsecaseImpl) Add(ctx context.Context, token string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	authentication := new(domain.Authentication)
 
 	authentication.RefreshToken = token
 
-	err := u.repo.Add(*authentication)
+	err := u.repo.Add(ctx, *authentication)
 	if err != nil {
 		return err
 	}
@@ -80,13 +91,16 @@ func (u *authenticationUsecaseImpl) Add(token string) error {
 }
 
 // Delete implements usecase.AuthenticationUsecase.
-func (u *authenticationUsecaseImpl) Delete(token string) error {
-	authentication, err := u.repo.FindByRefreshToken(token)
+func (u *authenticationUsecaseImpl) Delete(ctx context.Context, token string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	authentication, err := u.repo.FindByRefreshToken(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	err = u.repo.Delete(*authentication)
+	err = u.repo.Delete(ctx, *authentication)
 	if err != nil {
 		return err
 	}
@@ -94,8 +108,11 @@ func (u *authenticationUsecaseImpl) Delete(token string) error {
 	return nil
 }
 
-func (u *authenticationUsecaseImpl) ExistsByRefreshToken(token string) error {
-	_, err := u.repo.FindByRefreshToken(token)
+func (u *authenticationUsecaseImpl) ExistsByRefreshToken(ctx context.Context, token string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	_, err := u.repo.FindByRefreshToken(ctx, token)
 	if err != nil {
 		return err
 	}

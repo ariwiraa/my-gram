@@ -44,7 +44,7 @@ func (h *commentHandler) DeleteCommentHandler(ctx *gin.Context) {
 	requestParam := ctx.Param("commentId")
 	commentId, _ := strconv.Atoi(requestParam)
 
-	h.commentUsecase.Delete(uint(commentId), photoId)
+	h.commentUsecase.Delete(ctx.Request.Context(), uint(commentId), photoId)
 	helpers.SuccessResponse(ctx, http.StatusOK, nil)
 }
 
@@ -66,7 +66,7 @@ func (h *commentHandler) GetCommentHandler(ctx *gin.Context) {
 	requestParam := ctx.Param("commentId")
 	commentId, _ := strconv.Atoi(requestParam)
 
-	comment, err := h.commentUsecase.GetById(uint(commentId), photoId)
+	comment, err := h.commentUsecase.GetById(ctx.Request.Context(), uint(commentId), photoId)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 	}
@@ -90,7 +90,7 @@ func (h *commentHandler) GetCommentHandler(ctx *gin.Context) {
 func (h *commentHandler) GetCommentsHandler(ctx *gin.Context) {
 	photoId := ctx.Param("id")
 
-	comments, err := h.commentUsecase.GetAllCommentsByPhotoId(photoId)
+	comments, err := h.commentUsecase.GetAllCommentsByPhotoId(ctx.Request.Context(), photoId)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 	}
@@ -134,7 +134,7 @@ func (h *commentHandler) PostCommentHandler(ctx *gin.Context) {
 		return
 	}
 
-	comment, err := h.commentUsecase.Create(payload)
+	comment, err := h.commentUsecase.Create(ctx.Request.Context(), payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -184,7 +184,7 @@ func (h *commentHandler) PutCommentHandler(ctx *gin.Context) {
 		return
 	}
 
-	comment, err := h.commentUsecase.Update(payload, uint(commentId))
+	comment, err := h.commentUsecase.Update(ctx.Request.Context(), payload, uint(commentId))
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return

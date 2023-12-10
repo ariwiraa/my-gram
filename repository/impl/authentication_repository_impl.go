@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"context"
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/repository"
 	"gorm.io/gorm"
@@ -11,9 +12,9 @@ type authenticationRepositoryImpl struct {
 }
 
 // ExistsByRefreshToken implements repository.AuthenticationRepository.
-func (r *authenticationRepositoryImpl) FindByRefreshToken(token string) (*domain.Authentication, error) {
+func (r *authenticationRepositoryImpl) FindByRefreshToken(ctx context.Context, token string) (*domain.Authentication, error) {
 	authentication := new(domain.Authentication)
-	err := r.db.Debug().First(&authentication, "refresh_token = ?", token).Error
+	err := r.db.WithContext(ctx).First(&authentication, "refresh_token = ?", token).Error
 	if err != nil {
 		return authentication, err
 	}
@@ -21,8 +22,8 @@ func (r *authenticationRepositoryImpl) FindByRefreshToken(token string) (*domain
 }
 
 // Add implements repository.AuthenticationRepository.
-func (r *authenticationRepositoryImpl) Add(authentication domain.Authentication) error {
-	err := r.db.Debug().Create(&authentication).Error
+func (r *authenticationRepositoryImpl) Add(ctx context.Context, authentication domain.Authentication) error {
+	err := r.db.WithContext(ctx).Create(&authentication).Error
 	if err != nil {
 		return err
 	}
@@ -31,8 +32,8 @@ func (r *authenticationRepositoryImpl) Add(authentication domain.Authentication)
 }
 
 // Delete implements repository.AuthenticationRepository.
-func (r *authenticationRepositoryImpl) Delete(authentication domain.Authentication) error {
-	err := r.db.Debug().Where("refresh_token = ?", authentication.RefreshToken).Delete(&authentication).Error
+func (r *authenticationRepositoryImpl) Delete(ctx context.Context, authentication domain.Authentication) error {
+	err := r.db.WithContext(ctx).Where("refresh_token = ?", authentication.RefreshToken).Delete(&authentication).Error
 	if err != nil {
 		return err
 	}

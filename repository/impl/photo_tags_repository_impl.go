@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"context"
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/repository"
 	"gorm.io/gorm"
@@ -11,9 +12,9 @@ type photoTagsRepositoryImpl struct {
 }
 
 // FindPhotoTagsByPhotoId implements repository.PhotoTagsRepository.
-func (r *photoTagsRepositoryImpl) FindPhotoTagsByPhotoId(photoId string) ([]domain.PhotoTags, error) {
+func (r *photoTagsRepositoryImpl) FindPhotoTagsByPhotoId(ctx context.Context, photoId string) ([]domain.PhotoTags, error) {
 	var photoTags []domain.PhotoTags
-	err := r.db.Find(&photoTags, "photo_id = ?", photoId).Error
+	err := r.db.WithContext(ctx).Find(&photoTags, "photo_id = ?", photoId).Error
 	if err != nil {
 		return nil, err
 	}
@@ -22,8 +23,8 @@ func (r *photoTagsRepositoryImpl) FindPhotoTagsByPhotoId(photoId string) ([]doma
 }
 
 // Add implements repository.PhotoTagsRepository.
-func (r *photoTagsRepositoryImpl) Add(photoTags domain.PhotoTags) error {
-	err := r.db.Create(&photoTags).Error
+func (r *photoTagsRepositoryImpl) Add(ctx context.Context, photoTags domain.PhotoTags) error {
+	err := r.db.WithContext(ctx).Create(&photoTags).Error
 	if err != nil {
 		return err
 	}
@@ -32,9 +33,9 @@ func (r *photoTagsRepositoryImpl) Add(photoTags domain.PhotoTags) error {
 }
 
 // Delete implements repository.PhotoTagsRepository.
-func (r *photoTagsRepositoryImpl) Delete(photoId string) error {
+func (r *photoTagsRepositoryImpl) Delete(ctx context.Context, photoId string) error {
 	var photoTags domain.PhotoTags
-	err := r.db.Where("photo_id = ?", photoId).Delete(&photoTags).Error
+	err := r.db.WithContext(ctx).Where("photo_id = ?", photoId).Delete(&photoTags).Error
 	if err != nil {
 		return err
 	}

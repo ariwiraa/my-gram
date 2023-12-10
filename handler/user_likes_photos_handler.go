@@ -25,7 +25,7 @@ func (h *userLikesPhotosHandler) GetPhotosLikedHandler(ctx *gin.Context) {
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userId := uint(userData["Id"].(float64))
 
-	likes, err := h.likesUsecase.GetPhotosLikedByUserId(userId)
+	likes, err := h.likesUsecase.GetPhotosLikedByUserId(ctx.Request.Context(), userId)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -37,7 +37,7 @@ func (h *userLikesPhotosHandler) GetPhotosLikedHandler(ctx *gin.Context) {
 func (h *userLikesPhotosHandler) GetUsersWhoLikedPhotosHandler(ctx *gin.Context) {
 	photoId := ctx.Param("id")
 
-	users, err := h.likesUsecase.GetUsersWhoLikedPhotoByPhotoId(photoId)
+	users, err := h.likesUsecase.GetUsersWhoLikedPhotoByPhotoId(ctx.Request.Context(), photoId)
 	if err != nil {
 		helpers.FailResponse(ctx, 400, err.Error())
 		return
@@ -65,7 +65,7 @@ func (h *userLikesPhotosHandler) PostLikesHandler(ctx *gin.Context) {
 	userData := ctx.MustGet("userData").(jwt.MapClaims)
 	userId := uint(userData["Id"].(float64))
 
-	likes, err := h.likesUsecase.LikeThePhoto(photoId, userId)
+	likes, err := h.likesUsecase.LikeThePhoto(ctx.Request.Context(), photoId, userId)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return

@@ -1,9 +1,12 @@
 package repository
 
-import "github.com/ariwiraa/my-gram/domain"
+import (
+	"context"
+	"github.com/ariwiraa/my-gram/domain"
+)
 
 type PhotoTagsRepository interface {
-	Add(photoTags domain.PhotoTags) error
-	Delete(photoId string) error
-	FindPhotoTagsByPhotoId(photoId string) ([]domain.PhotoTags, error)
+	Add(ctx context.Context, photoTags domain.PhotoTags) error
+	Delete(ctx context.Context, photoId string) error
+	FindPhotoTagsByPhotoId(ctx context.Context, photoId string) ([]domain.PhotoTags, error)
 }

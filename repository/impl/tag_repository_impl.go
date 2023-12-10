@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"context"
 	"errors"
 
 	"github.com/ariwiraa/my-gram/domain"
@@ -13,9 +14,9 @@ type tagRepositoryImpl struct {
 }
 
 // FindById implements repository.TagRepository.
-func (r *tagRepositoryImpl) FindById(id uint) (*domain.Tag, error) {
+func (r *tagRepositoryImpl) FindById(ctx context.Context, id uint) (*domain.Tag, error) {
 	var tag domain.Tag
-	err := r.db.Where("id = ?", id).First(&tag).Error
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&tag).Error
 	if err != nil {
 		return nil, errors.New("tag not found")
 	}
@@ -23,14 +24,14 @@ func (r *tagRepositoryImpl) FindById(id uint) (*domain.Tag, error) {
 	return &tag, nil
 }
 
-func (r *tagRepositoryImpl) AddTagIfNotExists(name string) (*domain.Tag, error) {
+func (r *tagRepositoryImpl) AddTagIfNotExists(ctx context.Context, name string) (*domain.Tag, error) {
 	var existingTag domain.Tag
-	err := r.db.Where("name = ?", name).First(&existingTag).Error
+	err := r.db.WithContext(ctx).Where("name = ?", name).First(&existingTag).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// Tag dengan name tersebut belum ada, tambahkan tag baru
 			newTag := domain.Tag{Name: name}
-			newTagSaved, err := r.Add(newTag)
+			newTagSaved, err := r.Add(ctx, newTag)
 			if err != nil {
 				return nil, err
 			}
@@ -43,8 +44,8 @@ func (r *tagRepositoryImpl) AddTagIfNotExists(name string) (*domain.Tag, error) 
 }
 
 // Add implements repository.TagRepository.
-func (r *tagRepositoryImpl) Add(tag domain.Tag) (*domain.Tag, error) {
-	err := r.db.Create(&tag).Error
+func (r *tagRepositoryImpl) Add(ctx context.Context, tag domain.Tag) (*domain.Tag, error) {
+	err := r.db.WithContext(ctx).Create(&tag).Error
 	if err != nil {
 		return nil, err
 	}
@@ -53,9 +54,9 @@ func (r *tagRepositoryImpl) Add(tag domain.Tag) (*domain.Tag, error) {
 }
 
 // FindByName implements repository.TagRepository.
-func (r *tagRepositoryImpl) FindByName(name string) ([]domain.Tag, error) {
+func (r *tagRepositoryImpl) FindByName(ctx context.Context, name string) ([]domain.Tag, error) {
 	var tags []domain.Tag
-	err := r.db.Where("lower(name) LIKE lower(?)", "%"+name+"%").Find(&tags).Error
+	err := r.db.WithContext(ctx).Where("lower(name) LIKE lower(?)", "%"+name+"%").Find(&tags).Error
 	if err != nil {
 		return nil, errors.New("tag Not Found")
 	}

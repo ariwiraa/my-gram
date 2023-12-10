@@ -33,7 +33,7 @@ func (h *authHandler) PutAccessTokenHandler(ctx *gin.Context) {
 		return
 	}
 
-	err = h.authUsecase.ExistsByRefreshToken(payload.RefreshToken)
+	err = h.authUsecase.ExistsByRefreshToken(ctx.Request.Context(), payload.RefreshToken)
 	if err != nil {
 		return
 	}
@@ -62,7 +62,7 @@ func (h *authHandler) LogoutHandler(ctx *gin.Context) {
 		return
 	}
 
-	err = h.authUsecase.Delete(payload.RefreshToken)
+	err = h.authUsecase.Delete(ctx.Request.Context(), payload.RefreshToken)
 	if err != nil {
 		return
 	}
@@ -92,7 +92,7 @@ func (h *authHandler) PostUserLoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	loggedInUser, err := h.authUsecase.Login(payload)
+	loggedInUser, err := h.authUsecase.Login(ctx.Request.Context(), payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusUnauthorized, err.Error())
 		return
@@ -101,7 +101,7 @@ func (h *authHandler) PostUserLoginHandler(ctx *gin.Context) {
 	accessToken := helpers.NewAccessToken(uint64(loggedInUser.ID)).GenerateAccessToken()
 	refreshToken := helpers.NewRefreshToken(uint64(loggedInUser.ID)).GenerateRefreshToken()
 
-	err = h.authUsecase.Add(refreshToken)
+	err = h.authUsecase.Add(ctx.Request.Context(), refreshToken)
 	if err != nil {
 		return
 	}
@@ -140,7 +140,7 @@ func (h *authHandler) PostUserRegisterHandler(ctx *gin.Context) {
 		return
 	}
 
-	newUser, err := h.authUsecase.Register(payload)
+	newUser, err := h.authUsecase.Register(ctx.Request.Context(), payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return

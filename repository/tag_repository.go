@@ -1,10 +1,13 @@
 package repository
 
-import "github.com/ariwiraa/my-gram/domain"
+import (
+	"context"
+	"github.com/ariwiraa/my-gram/domain"
+)
 
 type TagRepository interface {
-	Add(tag domain.Tag) (*domain.Tag, error)
-	FindByName(name string) ([]domain.Tag, error)
-	FindById(id uint) (*domain.Tag, error)
-	AddTagIfNotExists(name string) (*domain.Tag, error)
+	Add(ctx context.Context, tag domain.Tag) (*domain.Tag, error)
+	FindByName(ctx context.Context, name string) ([]domain.Tag, error)
+	FindById(ctx context.Context, id uint) (*domain.Tag, error)
+	AddTagIfNotExists(ctx context.Context, name string) (*domain.Tag, error)
 }
