@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/matcornic/hermes/v2"
 	"gopkg.in/gomail.v2"
+	"log"
 	"os"
 	"strconv"
 )
@@ -30,6 +31,7 @@ func (dm *DataMail) Send() error {
 
 	err := dialer.DialAndSend(message)
 	if err != nil {
+		log.Println("gagal mengirim email: ", err)
 		return err
 	}
 
@@ -84,7 +86,7 @@ func Mail(data *DataMail) *DataMail {
 					Button: hermes.Button{
 						Color: "#22BC66",
 						Text:  data.Code,
-						Link: urlString,
+						Link:  urlString,
 					},
 				},
 			},

@@ -45,6 +45,18 @@ func (u *authenticationUsecaseImpl) Register(ctx context.Context, payload reques
 		return &newUser, err
 	}
 
+	configMail := helpers.DataMail{
+		Username: newUser.Username,
+		Email:    newUser.Email,
+		Token:    "123123",
+		Subject:  "Your verification Email",
+	}
+
+	err = helpers.Mail(&configMail).Send()
+	if err != nil {
+		return &newUser, errors.New("failed send email")
+	}
+
 	return &newUser, nil
 }
 
