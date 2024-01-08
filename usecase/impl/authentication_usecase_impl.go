@@ -3,17 +3,75 @@ package impl
 import (
 	"context"
 	"errors"
+	"strconv"
+	"time"
+
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/usecase"
-	"time"
 )
 
 type authenticationUsecaseImpl struct {
 	repo           repository.AuthenticationRepository
 	userRepository repository.UserRepository
+}
+
+func NewAuthenticationUsecaseImpl(repo repository.AuthenticationRepository, userRepository repository.UserRepository) usecase.AuthenticationUsecase {
+	return &authenticationUsecaseImpl{
+		repo:           repo,
+		userRepository: userRepository,
+	}
+}
+
+// ResendEmail implements usecase.AuthenticationUsecase.
+func (u *authenticationUsecaseImpl) ResendEmail(ctx context.Context, email string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	user, err := u.userRepository.FindByEmail(ctx, email)
+	if err != nil {
+		return errors.New("email is not found")
+	}
+
+	token := helpers.GenerateRandomOTP()
+	tokenString := strconv.Itoa(token)
+
+	configMail := helpers.DataMail{
+		Username: user.Username,
+		Email:    user.Email,
+		Token:    tokenString,
+		Subject:  "Your verification Email",
+	}
+
+	// TODO: Simpan token ke redis dengan TTL 5 menit
+
+	err = helpers.Mail(&configMail).Send()
+	if err != nil {
+		return errors.New("failed send email")
+	}
+
+	return nil
+
+}
+
+// VerifyEmail implements usecase.AuthenticationUsecase.
+func (u *authenticationUsecaseImpl) VerifyEmail(ctx context.Context, email, token string) error {
+	// TODO: Periksa apakah token sudah lebih dari 5 menit menggunakan redis
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	user, err := u.userRepository.FindByEmail(ctx, email)
+	if err != nil {
+		return errors.New("email is not found")
+	}
+
+	currentTime := time.Now()
+	user.EmailVerificationAt = &currentTime
+
+	return nil
+
 }
 
 func (u *authenticationUsecaseImpl) Register(ctx context.Context, payload request.UserRegister) (*domain.User, error) {
@@ -45,12 +103,16 @@ func (u *authenticationUsecaseImpl) Register(ctx context.Context, payload reques
 		return &newUser, err
 	}
 
+	token := helpers.GenerateRandomOTP()
+	tokenString := strconv.Itoa(token)
+
 	configMail := helpers.DataMail{
 		Username: newUser.Username,
 		Email:    newUser.Email,
-		Token:    "123123",
+		Token:    tokenString,
 		Subject:  "Your verification Email",
 	}
+	// TODO: Simpan token ke redis dengan TTL 5 menit
 
 	err = helpers.Mail(&configMail).Send()
 	if err != nil {
@@ -130,11 +192,4 @@ func (u *authenticationUsecaseImpl) ExistsByRefreshToken(ctx context.Context, to
 	}
 
 	return nil
-}
-
-func NewAuthenticationUsecaseImpl(repo repository.AuthenticationRepository, userRepository repository.UserRepository) usecase.AuthenticationUsecase {
-	return &authenticationUsecaseImpl{
-		repo:           repo,
-		userRepository: userRepository,
-	}
 }

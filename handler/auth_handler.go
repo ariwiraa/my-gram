@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"net/http"
+
+	"github.com/ariwiraa/my-gram/domain/dtos/request"
 
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/helpers"
@@ -16,11 +17,46 @@ type AuthHandler interface {
 	PostUserLoginHandler(ctx *gin.Context)
 	PutAccessTokenHandler(ctx *gin.Context)
 	LogoutHandler(ctx *gin.Context)
+	VerifyEmail(ctx *gin.Context)
+	ResendEmail(ctx *gin.Context)
 }
 
 type authHandler struct {
 	authUsecase usecase.AuthenticationUsecase
 	validate    *validator.Validate
+}
+
+// ResendEmail implements AuthHandler.
+func (h *authHandler) ResendEmail(ctx *gin.Context) {
+	var payload request.ResendEmailRequest
+
+	err := ctx.ShouldBindJSON(&payload)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = h.authUsecase.ResendEmail(ctx.Request.Context(), payload.Email)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helpers.SuccessResponse(ctx, http.StatusOK, "Resend Email verification success")
+}
+
+// VerifyEmail implements AuthHandler.
+func (h *authHandler) VerifyEmail(ctx *gin.Context) {
+	email := ctx.Query("email")
+	token := ctx.Query("token")
+
+	err := h.authUsecase.VerifyEmail(ctx.Request.Context(), email, token)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helpers.SuccessResponse(ctx, http.StatusOK, "Verifcation Email Success")
 }
 
 // PutAccessTokenHandler implements AuthHandler.

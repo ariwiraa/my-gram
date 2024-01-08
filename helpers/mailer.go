@@ -2,11 +2,12 @@ package helpers
 
 import (
 	"fmt"
-	"github.com/matcornic/hermes/v2"
-	"gopkg.in/gomail.v2"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/matcornic/hermes/v2"
+	"gopkg.in/gomail.v2"
 )
 
 type DataMail struct {
@@ -23,7 +24,7 @@ func (dm *DataMail) Send() error {
 	message.SetHeader("From", "MyGram <"+os.Getenv("MAIL_USER")+">")
 	message.SetHeader("To", dm.Email)
 	message.SetHeader("Subject", dm.Subject)
-	message.SetHeader("text/html", dm.EmailBody)
+	message.SetBody("text/html", dm.EmailBody)
 
 	port, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
 
@@ -73,19 +74,19 @@ func Mail(data *DataMail) *DataMail {
 		}
 	}
 
-	urlString := fmt.Sprintf("%s/auth/confirm=%s&token=%s", os.Getenv("FRONTEND_ORIGINAL_URL"), data.Email, data.Token)
+	urlString := fmt.Sprintf("%s/verify-email?email=%s&token=%s", os.Getenv("FRONTEND_ORIGIN_URL"), data.Email, data.Token)
 	emailBody, _ := h.GenerateHTML(hermes.Email{
 		Body: hermes.Body{
 			Name: data.Username,
 			Intros: []string{
-				"Welcome to MyGram!",
+				"Welcome to Lazapedia!",
 			},
 			Actions: []hermes.Action{
 				{
-					Instructions: "Here is your approval code. This code expires in 5 minutes",
+					Instructions: "Please click the following button to verify your email. This link expires in 5 minutes.",
 					Button: hermes.Button{
 						Color: "#22BC66",
-						Text:  data.Code,
+						Text:  "Confirm your account",
 						Link:  urlString,
 					},
 				},

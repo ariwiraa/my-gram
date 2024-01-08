@@ -3,10 +3,11 @@ package impl
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/usecase"
-	"time"
 )
 
 type userLikesPhotosUsecase struct {
@@ -34,6 +35,9 @@ func (u *userLikesPhotosUsecase) GetPhotosLikedByUserId(ctx context.Context, use
 	// Karena IN bisa mengambil semua id dengan satu kali call database daripada where yg harus berkali kali
 	// Jadi harus dihindari call database di dalam loop
 	photos, err := u.photoRepository.FindPhotosByIDList(ctx, photoIds)
+	if err != nil {
+		return photos, errors.New("id on the list is not found")
+	}
 
 	return photos, nil
 }

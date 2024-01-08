@@ -37,6 +37,8 @@ func NewRouter(routerHandler RouterHandler) *gin.Engine {
 	router := gin.Default()
 
 	router.POST("/signup", routerHandler.AuthHandler.PostUserRegisterHandler)
+	router.GET("/verify-email", routerHandler.AuthHandler.VerifyEmail)
+	router.POST("/resend-email", routerHandler.AuthHandler.ResendEmail)
 	router.POST("/signin", routerHandler.AuthHandler.PostUserLoginHandler)
 	router.PUT("/refresh", routerHandler.AuthHandler.PutAccessTokenHandler)
 	router.DELETE("/signout", middlewares.Authentication(), routerHandler.AuthHandler.LogoutHandler)

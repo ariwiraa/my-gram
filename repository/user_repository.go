@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/ariwiraa/my-gram/domain"
 	"gorm.io/gorm"
 )
@@ -9,6 +10,7 @@ import (
 type UserRepository interface {
 	AddUser(ctx context.Context, user domain.User) (domain.User, error)
 	FindByUsername(ctx context.Context, username string) (domain.User, error)
+	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindById(ctx context.Context, id uint) (*domain.User, error)
 	FindUsersByIDList(ctx context.Context, id []uint) ([]domain.User, error)
 	IsUsernameExists(ctx context.Context, username string) (bool, error)
@@ -18,6 +20,21 @@ type UserRepository interface {
 
 type userRepository struct {
 	db *gorm.DB
+}
+
+func NewUserRepository(db *gorm.DB) UserRepository {
+	return &userRepository{db: db}
+}
+
+// FindByEmail implements UserRepository.
+func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return &user, err
+	}
+
+	return &user, nil
 }
 
 func (r *userRepository) FindById(ctx context.Context, id uint) (*domain.User, error) {
@@ -103,8 +120,4 @@ func (r *userRepository) AddUser(ctx context.Context, user domain.User) (domain.
 	}
 
 	return user, nil
-}
-
-func NewUserRepository(db *gorm.DB) UserRepository {
-	return &userRepository{db: db}
 }
