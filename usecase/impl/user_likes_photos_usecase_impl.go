@@ -1,7 +1,10 @@
 package impl
 
 import (
+	"context"
 	"errors"
+	"time"
+
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/usecase"
@@ -13,8 +16,11 @@ type userLikesPhotosUsecase struct {
 	userRepository  repository.UserRepository
 }
 
-func (u *userLikesPhotosUsecase) GetPhotosLikedByUserId(userId uint) ([]domain.Photo, error) {
-	user, err := u.likesRepository.FindUserWhoLiked(userId)
+func (u *userLikesPhotosUsecase) GetPhotosLikedByUserId(ctx context.Context, userId uint) ([]domain.Photo, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	user, err := u.likesRepository.FindUserWhoLiked(ctx, userId)
 	if err != nil {
 		return []domain.Photo{}, err
 	}
@@ -28,19 +34,25 @@ func (u *userLikesPhotosUsecase) GetPhotosLikedByUserId(userId uint) ([]domain.P
 	// Function FindPhotosByIDList menggunakan IN bukan WHERE
 	// Karena IN bisa mengambil semua id dengan satu kali call database daripada where yg harus berkali kali
 	// Jadi harus dihindari call database di dalam loop
-	photos, err := u.photoRepository.FindPhotosByIDList(photoIds)
+	photos, err := u.photoRepository.FindPhotosByIDList(ctx, photoIds)
+	if err != nil {
+		return photos, errors.New("id on the list is not found")
+	}
 
 	return photos, nil
 }
 
 // LikeThePhoto implements UserLikesPhotosUsecase
-func (u *userLikesPhotosUsecase) LikeThePhoto(photoId string, userId uint) (string, error) {
-	err := u.photoRepository.IsPhotoExist(photoId)
+func (u *userLikesPhotosUsecase) LikeThePhoto(ctx context.Context, photoId string, userId uint) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	err := u.photoRepository.IsPhotoExist(ctx, photoId)
 	if err != nil {
 		return "", errors.New("foto tidak tersedia")
 	}
 
-	userLike, _ := u.likesRepository.VerifyUserLike(photoId, userId)
+	userLike, _ := u.likesRepository.VerifyUserLike(ctx, photoId, userId)
 
 	likes := domain.UserLikesPhoto{
 		PhotoId: photoId,
@@ -49,10 +61,10 @@ func (u *userLikesPhotosUsecase) LikeThePhoto(photoId string, userId uint) (stri
 
 	var message string
 	if !userLike {
-		u.likesRepository.InsertLike(likes)
+		u.likesRepository.InsertLike(ctx, likes)
 		message = "Berhasil menyukai foto"
 	} else {
-		u.likesRepository.DeleteLike(likes.PhotoId, likes.UserId)
+		u.likesRepository.DeleteLike(ctx, likes.PhotoId, likes.UserId)
 		message = "Gagal menyukai foto"
 	}
 
@@ -64,13 +76,16 @@ func NewUserLikesPhotosUsecase(likesRepository repository.UserLikesPhotoReposito
 	return &userLikesPhotosUsecase{likesRepository: likesRepository, photoRepository: photoRepository, userRepository: userRepository}
 }
 
-func (u *userLikesPhotosUsecase) GetUsersWhoLikedPhotoByPhotoId(photoId string) ([]domain.User, error) {
-	err := u.photoRepository.IsPhotoExist(photoId)
+func (u *userLikesPhotosUsecase) GetUsersWhoLikedPhotoByPhotoId(ctx context.Context, photoId string) ([]domain.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	err := u.photoRepository.IsPhotoExist(ctx, photoId)
 	if err != nil {
 		return []domain.User{}, err
 	}
 
-	photo, err := u.likesRepository.FindPhotoWhoLiked(photoId)
+	photo, err := u.likesRepository.FindPhotoWhoLiked(ctx, photoId)
 	if err != nil {
 		return []domain.User{}, err
 	}
@@ -82,7 +97,7 @@ func (u *userLikesPhotosUsecase) GetUsersWhoLikedPhotoByPhotoId(photoId string) 
 		userIds = append(userIds, likedUser.ID)
 	}
 
-	users, err := u.userRepository.FindUsersByIDList(userIds)
+	users, err := u.userRepository.FindUsersByIDList(ctx, userIds)
 	if err != nil {
 		return users, err
 	}

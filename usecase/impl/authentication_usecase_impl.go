@@ -1,7 +1,12 @@
 package impl
 
 import (
+	"context"
 	"errors"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"github.com/ariwiraa/my-gram/helpers"
@@ -10,19 +15,111 @@ import (
 )
 
 type authenticationUsecaseImpl struct {
-	repo           repository.AuthenticationRepository
-	userRepository repository.UserRepository
+	repo            repository.AuthenticationRepository
+	userRepository  repository.UserRepository
+	redisRepository repository.RedisRepository
 }
 
-func (u *authenticationUsecaseImpl) Register(payload request.UserRegister) (*domain.User, error) {
+func NewAuthenticationUsecaseImpl(repo repository.AuthenticationRepository, userRepository repository.UserRepository, redisRepository repository.RedisRepository) usecase.AuthenticationUsecase {
+	return &authenticationUsecaseImpl{
+		repo:            repo,
+		userRepository:  userRepository,
+		redisRepository: redisRepository,
+	}
+}
+
+// ResendEmail implements usecase.AuthenticationUsecase.
+func (u *authenticationUsecaseImpl) ResendEmail(ctx context.Context, email string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	user, err := u.userRepository.FindByEmail(ctx, email)
+	if err != nil {
+		log.Printf("[ResendEmail, FindByEmail] with error detail %v", err.Error())
+		return errors.New("email is not found")
+	}
+
+	token := helpers.GenerateRandomOTP()
+	tokenString := strconv.Itoa(token)
+
+	configMail := helpers.DataMail{
+		Username: user.Username,
+		Email:    user.Email,
+		Token:    tokenString,
+		Subject:  "Your verification Email",
+	}
+
+	err = helpers.Mail(&configMail).Send()
+	if err != nil {
+		log.Printf("[ResendEmail, Mail] with error detail %v", err.Error())
+		return errors.New("failed send email")
+	}
+
+	err = u.redisRepository.Set(ctx, user.Email, tokenString, 5*time.Minute)
+	if err != nil {
+		log.Printf("[ResendEmail, Set] with error detail %v", err.Error())
+		return err
+	}
+
+	return nil
+
+}
+
+// VerifyEmail implements usecase.AuthenticationUsecase.
+func (u *authenticationUsecaseImpl) VerifyEmail(ctx context.Context, email, token string) error {
+	// TODO: Periksa apakah token sudah lebih dari 5 menit menggunakan redis
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	user, err := u.userRepository.FindByEmail(ctx, email)
+	if err != nil {
+		log.Printf("[VerifyEmail, FindByEmail] with error detail %v", err.Error())
+		return errors.New("email is not found")
+	}
+
+	value, err := u.redisRepository.Get(ctx, user.Email)
+	if err != nil {
+		log.Printf("[VerifyEmail, Get] with error detail %v", err.Error())
+		return errors.New("your link is expired")
+	}
+
+	if value == token && token != "" {
+		currentTime := time.Now()
+		user.EmailVerificationAt = &currentTime
+	}
+
+	err = u.userRepository.UpdateUser(ctx, *user)
+	if err != nil {
+		log.Printf("[VerifyEmail, UpdateUser] with error detail %v", err.Error())
+		return err
+	}
+
+	return nil
+
+}
+
+func (u *authenticationUsecaseImpl) Register(ctx context.Context, payload request.UserRegister) (*domain.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	var user domain.User
 
-	isEmailUsed, _ := u.userRepository.IsEmailExists(payload.Email)
+	isEmailUsed, err := u.userRepository.IsEmailExists(ctx, payload.Email)
+	if err != nil {
+		log.Printf("[Register, IsEmailExists] with error detail %v", err.Error())
+		return &user, err
+	}
+
 	if isEmailUsed {
 		return &user, errors.New("email sudah digunakan")
 	}
 
-	isUsernameUsed, _ := u.userRepository.IsUsernameExists(payload.Username)
+	isUsernameUsed, err := u.userRepository.IsUsernameExists(ctx, payload.Username)
+	if err != nil {
+		log.Printf("[Register, IsUsernameExist] with error detail %v", err.Error())
+		return &user, nil
+	}
+
 	if isUsernameUsed {
 		return &user, errors.New("username sudah digunakan")
 	}
@@ -35,43 +132,73 @@ func (u *authenticationUsecaseImpl) Register(payload request.UserRegister) (*dom
 		Password: hashingPassword,
 	}
 
-	newUser, err := u.userRepository.AddUser(user)
+	newUser, err := u.userRepository.AddUser(ctx, user)
 	if err != nil {
+		log.Printf("[VerifyEmail, AddUser] with error detail %v", err.Error())
+		return &newUser, err
+	}
+
+	token := helpers.GenerateRandomOTP()
+	tokenString := strconv.Itoa(token)
+
+	configMail := helpers.DataMail{
+		Username: newUser.Username,
+		Email:    newUser.Email,
+		Token:    tokenString,
+		Subject:  "Your verification Email",
+	}
+
+	err = helpers.Mail(&configMail).Send()
+	if err != nil {
+		log.Printf("[Register, Mail] with error detail %v", err.Error())
+		return &newUser, errors.New("failed send email")
+	}
+
+	// TODO: Simpan token ke redis dengan TTL 5 menit
+	err = u.redisRepository.Set(ctx, newUser.Email, tokenString, 5*time.Minute)
+	if err != nil {
+		log.Printf("[VerifyEmail, Set] with error detail %v", err.Error())
 		return &newUser, err
 	}
 
 	return &newUser, nil
 }
 
-func (u *authenticationUsecaseImpl) Login(payload request.UserLogin) (*domain.User, error) {
-	username := payload.Username
-	password := payload.Password
+func (u *authenticationUsecaseImpl) Login(ctx context.Context, payload request.UserLogin) (*domain.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-	user, err := u.userRepository.FindByUsername(username)
+	user, err := u.userRepository.FindByUsername(ctx, payload.Username)
 	if err != nil {
+		log.Printf("[Login, FindByUsername] with error detail %v", err.Error())
 		return &user, err
 	}
 
-	if user.ID == 0 {
-		return &user, err
+	if user.EmailVerificationAt == nil {
+		return &user, errors.New("email not verified. Please verif your email first")
 	}
 
-	comparePassword := helpers.ComparePass([]byte(user.Password), []byte(password))
+	comparePassword := helpers.ComparePass([]byte(user.Password), []byte(payload.Password))
 	if !comparePassword {
-		return &user, err
+		log.Printf("[Login, ComparePass] with error detail %v", err.Error())
+		return &user, errors.New("password is not match")
 	}
 
 	return &user, nil
 }
 
 // Add implements usecase.AuthenticationUsecase.
-func (u *authenticationUsecaseImpl) Add(token string) error {
+func (u *authenticationUsecaseImpl) Add(ctx context.Context, token string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	authentication := new(domain.Authentication)
 
 	authentication.RefreshToken = token
 
-	err := u.repo.Add(*authentication)
+	err := u.repo.Add(ctx, *authentication)
 	if err != nil {
+		log.Printf("[Add, Add] with error detail %v", err.Error())
 		return err
 	}
 
@@ -80,32 +207,34 @@ func (u *authenticationUsecaseImpl) Add(token string) error {
 }
 
 // Delete implements usecase.AuthenticationUsecase.
-func (u *authenticationUsecaseImpl) Delete(token string) error {
-	authentication, err := u.repo.FindByRefreshToken(token)
+func (u *authenticationUsecaseImpl) Delete(ctx context.Context, token string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	authentication, err := u.repo.FindByRefreshToken(ctx, token)
 	if err != nil {
+		log.Printf("[Delete, FindByRefreshToken] with error detail %v", err.Error())
 		return err
 	}
 
-	err = u.repo.Delete(*authentication)
+	err = u.repo.Delete(ctx, *authentication)
 	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (u *authenticationUsecaseImpl) ExistsByRefreshToken(token string) error {
-	_, err := u.repo.FindByRefreshToken(token)
-	if err != nil {
+		log.Printf("[Delete, Delete] with error detail %v", err.Error())
 		return err
 	}
 
 	return nil
 }
 
-func NewAuthenticationUsecaseImpl(repo repository.AuthenticationRepository, userRepository repository.UserRepository) usecase.AuthenticationUsecase {
-	return &authenticationUsecaseImpl{
-		repo:           repo,
-		userRepository: userRepository,
+func (u *authenticationUsecaseImpl) ExistsByRefreshToken(ctx context.Context, token string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	_, err := u.repo.FindByRefreshToken(ctx, token)
+	if err != nil {
+		log.Printf("[ExistsByRefreshToken, FindByRefreshToken] with error detail %v", err.Error())
+		return err
 	}
+
+	return nil
 }

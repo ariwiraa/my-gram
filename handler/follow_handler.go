@@ -23,7 +23,7 @@ type followHandlerImpl struct {
 func (h *followHandlerImpl) GetFollowersHandler(ctx *gin.Context) {
 	username := ctx.Param("username")
 
-	followers, err := h.followUsecase.GetFollowersByUsername(username)
+	followers, err := h.followUsecase.GetFollowersByUsername(ctx.Request.Context(), username)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -35,7 +35,7 @@ func (h *followHandlerImpl) GetFollowersHandler(ctx *gin.Context) {
 func (h *followHandlerImpl) GetFollowingsHandler(ctx *gin.Context) {
 	username := ctx.Param("username")
 
-	followings, err := h.followUsecase.GetFollowingsByUsername(username)
+	followings, err := h.followUsecase.GetFollowingsByUsername(ctx.Request.Context(), username)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -60,7 +60,7 @@ func (h *followHandlerImpl) PostFollowHandler(ctx *gin.Context) {
 		UserIdFollower:  userIdFollower,
 	}
 
-	message, err := h.followUsecase.FollowUser(payload)
+	message, err := h.followUsecase.FollowUser(ctx.Request.Context(), payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return

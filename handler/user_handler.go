@@ -18,7 +18,7 @@ type userHandlerImpl struct {
 func (h *userHandlerImpl) GetUserProfileHandler(ctx *gin.Context) {
 	username := ctx.Param("username")
 
-	profileResponse, err := h.userUsecase.GetUserProfileByUsername(username)
+	profileResponse, err := h.userUsecase.GetUserProfileByUsername(ctx.Request.Context(), username)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return

@@ -1,11 +1,13 @@
 package impl
 
 import (
+	"context"
 	"errors"
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/usecase"
+	"time"
 )
 
 type commentUsecase struct {
@@ -14,10 +16,13 @@ type commentUsecase struct {
 }
 
 // Create implements CommentUsecase
-func (u *commentUsecase) Create(payload request.CommentRequest) (*domain.Comment, error) {
+func (u *commentUsecase) Create(ctx context.Context, payload request.CommentRequest) (*domain.Comment, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	var comment domain.Comment
 
-	err := u.photoRepository.IsPhotoExist(payload.PhotoId)
+	err := u.photoRepository.IsPhotoExist(ctx, payload.PhotoId)
 	if err != nil {
 		return &comment, errors.New("photo tidak ada")
 	}
@@ -28,7 +33,7 @@ func (u *commentUsecase) Create(payload request.CommentRequest) (*domain.Comment
 		UserId:  payload.UserId,
 	}
 
-	newComment, err := u.commentRepository.Create(comment)
+	newComment, err := u.commentRepository.Create(ctx, comment)
 	if err != nil {
 		return newComment, err
 	}
@@ -37,28 +42,34 @@ func (u *commentUsecase) Create(payload request.CommentRequest) (*domain.Comment
 }
 
 // Delete implements CommentUsecase
-func (u *commentUsecase) Delete(id uint, photoId string) {
-	err := u.photoRepository.IsPhotoExist(photoId)
+func (u *commentUsecase) Delete(ctx context.Context, id uint, photoId string) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	err := u.photoRepository.IsPhotoExist(ctx, photoId)
 	if err != nil {
 		return
 	}
 
-	comment, err := u.commentRepository.FindById(id)
+	comment, err := u.commentRepository.FindById(ctx, id)
 	if err != nil {
 		return
 	}
 
-	u.commentRepository.Delete(comment.ID)
+	u.commentRepository.Delete(ctx, comment.ID)
 }
 
 // GetAll implements CommentUsecase
-func (u *commentUsecase) GetAllCommentsByPhotoId(photoId string) ([]domain.Comment, error) {
-	err := u.photoRepository.IsPhotoExist(photoId)
+func (u *commentUsecase) GetAllCommentsByPhotoId(ctx context.Context, photoId string) ([]domain.Comment, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	err := u.photoRepository.IsPhotoExist(ctx, photoId)
 	if err != nil {
 		return nil, err
 	}
 
-	comments, err := u.commentRepository.FindAllCommentsByPhotoId(photoId)
+	comments, err := u.commentRepository.FindAllCommentsByPhotoId(ctx, photoId)
 	if err != nil {
 		return comments, err
 	}
@@ -67,13 +78,16 @@ func (u *commentUsecase) GetAllCommentsByPhotoId(photoId string) ([]domain.Comme
 }
 
 // GetById implements CommentUsecase
-func (u *commentUsecase) GetById(id uint, photoId string) (*domain.Comment, error) {
-	err := u.photoRepository.IsPhotoExist(photoId)
+func (u *commentUsecase) GetById(ctx context.Context, id uint, photoId string) (*domain.Comment, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	err := u.photoRepository.IsPhotoExist(ctx, photoId)
 	if err != nil {
 		return &domain.Comment{}, err
 	}
 
-	comment, err := u.commentRepository.FindById(id)
+	comment, err := u.commentRepository.FindById(ctx, id)
 	if err != nil {
 		return comment, err
 	}
@@ -82,15 +96,18 @@ func (u *commentUsecase) GetById(id uint, photoId string) (*domain.Comment, erro
 }
 
 // Update implements CommentUsecase
-func (u *commentUsecase) Update(payload request.CommentRequest, id uint) (*domain.Comment, error) {
-	comment, err := u.commentRepository.FindById(id)
+func (u *commentUsecase) Update(ctx context.Context, payload request.CommentRequest, id uint) (*domain.Comment, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	comment, err := u.commentRepository.FindById(ctx, id)
 	if err != nil {
 		return comment, err
 	}
 
 	comment.Message = payload.Message
 
-	updatedComment, err := u.commentRepository.Update(*comment, id)
+	updatedComment, err := u.commentRepository.Update(ctx, *comment, id)
 	if err != nil {
 		return updatedComment, err
 	}

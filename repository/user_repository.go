@@ -1,37 +1,35 @@
 package repository
 
 import (
+	"context"
+
 	"github.com/ariwiraa/my-gram/domain"
 	"gorm.io/gorm"
 )
 
 type UserRepository interface {
-	AddUser(user domain.User) (domain.User, error)
-	FindByUsername(username string) (domain.User, error)
-	FindById(id uint) (*domain.User, error)
-	FindUsersByIDList(id []uint) ([]domain.User, error)
-	IsUsernameExists(username string) (bool, error)
-	IsEmailExists(email string) (bool, error)
-	IsUserExists(id uint) error
+	AddUser(ctx context.Context, user domain.User) (domain.User, error)
+	FindByUsername(ctx context.Context, username string) (domain.User, error)
+	FindByEmail(ctx context.Context, email string) (*domain.User, error)
+	FindById(ctx context.Context, id uint) (*domain.User, error)
+	FindUsersByIDList(ctx context.Context, id []uint) ([]domain.User, error)
+	IsUsernameExists(ctx context.Context, username string) (bool, error)
+	IsEmailExists(ctx context.Context, email string) (bool, error)
+	IsUserExists(ctx context.Context, id uint) error
+	UpdateUser(ctx context.Context, user domain.User) error
 }
 
 type userRepository struct {
 	db *gorm.DB
 }
 
-func (r *userRepository) FindById(id uint) (*domain.User, error) {
-	var user domain.User
-	err := r.db.Where("id = ?", id).First(&user).Error
-	if err != nil {
-		return &user, err
-	}
-
-	return &user, nil
+func NewUserRepository(db *gorm.DB) UserRepository {
+	return &userRepository{db: db}
 }
 
-func (r *userRepository) IsUserExists(id uint) error {
-	var user domain.User
-	err := r.db.Where("id = ?", id).First(&user).Error
+// UpdateUser implements UserRepository.
+func (r *userRepository) UpdateUser(ctx context.Context, user domain.User) error {
+	err := r.db.WithContext(ctx).Where("id = ?", user.ID).Updates(&user).Error
 	if err != nil {
 		return err
 	}
@@ -39,9 +37,40 @@ func (r *userRepository) IsUserExists(id uint) error {
 	return nil
 }
 
-func (r *userRepository) FindUsersByIDList(userIds []uint) ([]domain.User, error) {
+// FindByEmail implements UserRepository.
+func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return &user, err
+	}
+
+	return &user, nil
+}
+
+func (r *userRepository) FindById(ctx context.Context, id uint) (*domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
+	if err != nil {
+		return &user, err
+	}
+
+	return &user, nil
+}
+
+func (r *userRepository) IsUserExists(ctx context.Context, id uint) error {
+	var user domain.User
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *userRepository) FindUsersByIDList(ctx context.Context, userIds []uint) ([]domain.User, error) {
 	var users []domain.User
-	err := r.db.Debug().Preload("Photos").Find(&users, "users.id IN ?", userIds).Error
+	err := r.db.WithContext(ctx).Preload("Photos").Find(&users, "users.id IN ?", userIds).Error
 	if err != nil {
 		return users, err
 	}
@@ -50,9 +79,9 @@ func (r *userRepository) FindUsersByIDList(userIds []uint) ([]domain.User, error
 }
 
 // IsEmailExists implements UserRepository
-func (r *userRepository) IsEmailExists(email string) (bool, error) {
+func (r *userRepository) IsEmailExists(ctx context.Context, email string) (bool, error) {
 	var user domain.User
-	err := r.db.Debug().Where("email = ?", email).First(&user).Error
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return false, nil
@@ -64,9 +93,9 @@ func (r *userRepository) IsEmailExists(email string) (bool, error) {
 }
 
 // IsUsernameExists implements UserRepository
-func (r *userRepository) IsUsernameExists(username string) (bool, error) {
+func (r *userRepository) IsUsernameExists(ctx context.Context, username string) (bool, error) {
 	var user domain.User
-	err := r.db.Debug().Where("username = ?", username).First(&user).Error
+	err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return false, nil
@@ -78,10 +107,10 @@ func (r *userRepository) IsUsernameExists(username string) (bool, error) {
 }
 
 // IsEmailExist implements UserRepository
-func (r *userRepository) FindByUsername(username string) (domain.User, error) {
+func (r *userRepository) FindByUsername(ctx context.Context, username string) (domain.User, error) {
 	var user domain.User
-	// TODO: pilih field dari tabel photos yang dibutuhkan saja
-	err := r.db.Preload("Photos", func(db *gorm.DB) *gorm.DB {
+
+	err := r.db.WithContext(ctx).Preload("Photos", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id", "photo_url", "caption", "created_at", "user_id")
 	}).
 		First(&user, "username = ?", username).
@@ -95,15 +124,11 @@ func (r *userRepository) FindByUsername(username string) (domain.User, error) {
 }
 
 // AddUser implements domain.UserRepository
-func (r *userRepository) AddUser(user domain.User) (domain.User, error) {
-	err := r.db.Debug().Create(&user).Error
+func (r *userRepository) AddUser(ctx context.Context, user domain.User) (domain.User, error) {
+	err := r.db.WithContext(ctx).Create(&user).Error
 	if err != nil {
 		return user, err
 	}
 
 	return user, nil
-}
-
-func NewUserRepository(db *gorm.DB) UserRepository {
-	return &userRepository{db: db}
 }

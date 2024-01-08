@@ -1,18 +1,19 @@
 package repository
 
 import (
+	"context"
 	"github.com/ariwiraa/my-gram/domain"
 )
 
 type PhotoRepository interface {
-	Create(photo domain.Photo) (domain.Photo, error)
-	FindById(id string) (domain.Photo, error)
-	FindAll() ([]domain.Photo, error)
-	FindByUserId(id uint) ([]domain.Photo, error)
-	FindByIdAndByUserId(id string, userId uint) (*domain.Photo, error)
-	Update(photo domain.Photo, id string) (domain.Photo, error)
-	Delete(photo domain.Photo)
-	IsPhotoExist(id string) error
-	FindPhotosByIDList(photoIds []string) ([]domain.Photo, error)
-	CountPhotoByUserId(userId uint) (int64, error)
+	Create(ctx context.Context, photo domain.Photo) (domain.Photo, error)
+	FindById(ctx context.Context, id string) (domain.Photo, error)
+	FindAll(ctx context.Context) ([]domain.Photo, error)
+	FindByUserId(ctx context.Context, id uint) ([]domain.Photo, error)
+	FindByIdAndByUserId(ctx context.Context, id string, userId uint) (*domain.Photo, error)
+	Update(ctx context.Context, photo domain.Photo, id string) (domain.Photo, error)
+	Delete(ctx context.Context, photo domain.Photo)
+	IsPhotoExist(ctx context.Context, id string) error
+	FindPhotosByIDList(ctx context.Context, photoIds []string) ([]domain.Photo, error)
+	CountPhotoByUserId(ctx context.Context, userId uint) (int64, error)
 }

@@ -1,12 +1,14 @@
 package impl
 
 import (
+	"context"
 	"errors"
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/usecase"
 	"log"
+	"time"
 )
 
 type followUsecaseImpl struct {
@@ -14,14 +16,17 @@ type followUsecaseImpl struct {
 	userRepository   repository.UserRepository
 }
 
-func (u *followUsecaseImpl) GetFollowingsByUsername(username string) ([]domain.User, error) {
-	user, err := u.userRepository.FindByUsername(username)
+func (u *followUsecaseImpl) GetFollowingsByUsername(ctx context.Context, username string) ([]domain.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	user, err := u.userRepository.FindByUsername(ctx, username)
 	if err != nil {
 		log.Printf("Error fetching user by username: %v", err)
 		return []domain.User{}, err
 	}
 
-	followings, err := u.followRepository.FindFollowingByUserId(user.ID)
+	followings, err := u.followRepository.FindFollowingByUserId(ctx, user.ID)
 	if err != nil {
 		log.Printf("Error fetching followings by id: %v", err)
 		return followings, err
@@ -31,14 +36,17 @@ func (u *followUsecaseImpl) GetFollowingsByUsername(username string) ([]domain.U
 	return followings, nil
 }
 
-func (u *followUsecaseImpl) GetFollowersByUsername(username string) ([]domain.User, error) {
-	user, err := u.userRepository.FindByUsername(username)
+func (u *followUsecaseImpl) GetFollowersByUsername(ctx context.Context, username string) ([]domain.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	user, err := u.userRepository.FindByUsername(ctx, username)
 	if err != nil {
 		log.Printf("Error fetching user by username: %v", err)
 		return []domain.User{}, err
 	}
 
-	followers, err := u.followRepository.FindFollowersByUserId(user.ID)
+	followers, err := u.followRepository.FindFollowersByUserId(ctx, user.ID)
 	if err != nil {
 		log.Printf("Error fetching followers by id: %v", err)
 		return followers, err
@@ -52,8 +60,11 @@ func NewFollowUsecaseImpl(followRepository repository.FollowRepository, userRepo
 	return &followUsecaseImpl{followRepository: followRepository, userRepository: userRepository}
 }
 
-func (u *followUsecaseImpl) FollowUser(followRequest request.FollowRequest) (string, error) {
-	err := u.userRepository.IsUserExists(followRequest.UserIdFollowing)
+func (u *followUsecaseImpl) FollowUser(ctx context.Context, followRequest request.FollowRequest) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	err := u.userRepository.IsUserExists(ctx, followRequest.UserIdFollowing)
 	if err != nil {
 		log.Printf("Error checking user by id: %v", err)
 		return "", errors.New("user doesn't exists")
@@ -64,18 +75,18 @@ func (u *followUsecaseImpl) FollowUser(followRequest request.FollowRequest) (str
 		FollowingId: followRequest.UserIdFollowing,
 	}
 
-	followed, _ := u.followRepository.VerifyUserFollow(follow)
+	followed, _ := u.followRepository.VerifyUserFollow(ctx, follow)
 
 	var message string
 	if !followed {
-		err := u.followRepository.Save(follow)
+		err := u.followRepository.Save(ctx, follow)
 		if err != nil {
 			return "", errors.New("failed follow user")
 		}
 		log.Printf("id %d succesfully follow id %d", followRequest.UserIdFollowing, followRequest.UserIdFollower)
 		message = "successfully followed"
 	} else {
-		err := u.followRepository.Delete(follow)
+		err := u.followRepository.Delete(ctx, follow)
 		if err != nil {
 			return "", errors.New("failed unfollow user")
 		}

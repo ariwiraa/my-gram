@@ -1,15 +1,16 @@
 package repository
 
 import (
+	"context"
 	"github.com/ariwiraa/my-gram/domain"
 )
 
 type FollowRepository interface {
-	Save(follow domain.Follow) error
-	Delete(follow domain.Follow) error
-	VerifyUserFollow(follow domain.Follow) (bool, error)
-	CountFollowerByUserId(userId uint) (int64, error)
-	CountFollowingByUserId(userId uint) (int64, error)
-	FindFollowersByUserId(userId uint) ([]domain.User, error)
-	FindFollowingByUserId(userId uint) ([]domain.User, error)
+	Save(ctx context.Context, follow domain.Follow) error
+	Delete(ctx context.Context, follow domain.Follow) error
+	VerifyUserFollow(ctx context.Context, follow domain.Follow) (bool, error)
+	CountFollowerByUserId(ctx context.Context, userId uint) (int64, error)
+	CountFollowingByUserId(ctx context.Context, userId uint) (int64, error)
+	FindFollowersByUserId(ctx context.Context, userId uint) ([]domain.User, error)
+	FindFollowingByUserId(ctx context.Context, userId uint) ([]domain.User, error)
 }

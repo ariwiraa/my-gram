@@ -1,14 +1,18 @@
 package usecase
 
 import (
+	"context"
+
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos/request"
 )
 
 type AuthenticationUsecase interface {
-	Add(token string) error
-	ExistsByRefreshToken(token string) error
-	Delete(token string) error
-	Register(payload request.UserRegister) (*domain.User, error)
-	Login(payload request.UserLogin) (*domain.User, error)
+	Add(ctx context.Context, token string) error
+	ExistsByRefreshToken(ctx context.Context, token string) error
+	Delete(ctx context.Context, token string) error
+	Register(ctx context.Context, payload request.UserRegister) (*domain.User, error)
+	Login(ctx context.Context, payload request.UserLogin) (*domain.User, error)
+	VerifyEmail(ctx context.Context, email, token string) error
+	ResendEmail(ctx context.Context, email string) error
 }

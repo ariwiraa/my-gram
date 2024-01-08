@@ -1,9 +1,12 @@
 package repository
 
-import "github.com/ariwiraa/my-gram/domain"
+import (
+	"context"
+	"github.com/ariwiraa/my-gram/domain"
+)
 
 type AuthenticationRepository interface {
-	Add(authentication domain.Authentication) error
-	FindByRefreshToken(token string) (*domain.Authentication, error)
-	Delete(authentication domain.Authentication) error
+	Add(ctx context.Context, authentication domain.Authentication) error
+	FindByRefreshToken(ctx context.Context, token string) (*domain.Authentication, error)
+	Delete(ctx context.Context, authentication domain.Authentication) error
 }

@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"context"
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/repository"
 	"gorm.io/gorm"
@@ -10,10 +11,10 @@ type followRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func (r *followRepositoryImpl) FindFollowingByUserId(userId uint) ([]domain.User, error) {
+func (r *followRepositoryImpl) FindFollowingByUserId(ctx context.Context, userId uint) ([]domain.User, error) {
 	var followings []domain.User
 
-	err := r.db.Debug().Table("follows").
+	err := r.db.WithContext(ctx).Table("follows").
 		Select("users.*").
 		Joins("INNER JOIN users ON follows.following_id = users.id").
 		Where("follows.follower_id = ?", userId).
@@ -27,10 +28,10 @@ func (r *followRepositoryImpl) FindFollowingByUserId(userId uint) ([]domain.User
 	return followings, nil
 }
 
-func (r *followRepositoryImpl) FindFollowersByUserId(userId uint) ([]domain.User, error) {
+func (r *followRepositoryImpl) FindFollowersByUserId(ctx context.Context, userId uint) ([]domain.User, error) {
 	var followers []domain.User
 
-	err := r.db.Debug().Table("follows").
+	err := r.db.WithContext(ctx).Table("follows").
 		Select("users.*").
 		Joins("INNER JOIN users ON follows.follower_id = users.id").
 		Where("follows.following_id = ?", userId).
@@ -44,9 +45,9 @@ func (r *followRepositoryImpl) FindFollowersByUserId(userId uint) ([]domain.User
 	return followers, nil
 }
 
-func (r *followRepositoryImpl) CountFollowerByUserId(userId uint) (int64, error) {
+func (r *followRepositoryImpl) CountFollowerByUserId(ctx context.Context, userId uint) (int64, error) {
 	var totalFollower int64
-	err := r.db.Model(&domain.Follow{}).Where("following_id = ?", userId).Count(&totalFollower).Error
+	err := r.db.WithContext(ctx).Model(&domain.Follow{}).Where("following_id = ?", userId).Count(&totalFollower).Error
 	if err != nil {
 		return totalFollower, err
 	}
@@ -54,9 +55,9 @@ func (r *followRepositoryImpl) CountFollowerByUserId(userId uint) (int64, error)
 	return totalFollower, nil
 }
 
-func (r *followRepositoryImpl) CountFollowingByUserId(userId uint) (int64, error) {
+func (r *followRepositoryImpl) CountFollowingByUserId(ctx context.Context, userId uint) (int64, error) {
 	var totalFollower int64
-	err := r.db.Model(&domain.Follow{}).Where("follower_id = ?", userId).Count(&totalFollower).Error
+	err := r.db.WithContext(ctx).Model(&domain.Follow{}).Where("follower_id = ?", userId).Count(&totalFollower).Error
 	if err != nil {
 		return totalFollower, err
 	}
@@ -64,16 +65,17 @@ func (r *followRepositoryImpl) CountFollowingByUserId(userId uint) (int64, error
 	return totalFollower, nil
 }
 
-func (r *followRepositoryImpl) Save(follow domain.Follow) error {
-	err := r.db.Create(&follow).Error
+func (r *followRepositoryImpl) Save(ctx context.Context, follow domain.Follow) error {
+	err := r.db.WithContext(ctx).Create(&follow).Error
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *followRepositoryImpl) Delete(follow domain.Follow) error {
+func (r *followRepositoryImpl) Delete(ctx context.Context, follow domain.Follow) error {
 	err := r.db.
+		WithContext(ctx).
 		Where("following_id = ? AND follower_id = ?", follow.FollowingId, follow.FollowerId).
 		Delete(&follow).
 		Error
@@ -85,8 +87,9 @@ func (r *followRepositoryImpl) Delete(follow domain.Follow) error {
 	return nil
 }
 
-func (r *followRepositoryImpl) VerifyUserFollow(follow domain.Follow) (bool, error) {
+func (r *followRepositoryImpl) VerifyUserFollow(ctx context.Context, follow domain.Follow) (bool, error) {
 	err := r.db.
+		WithContext(ctx).
 		Where("following_id = ? AND follower_id = ?", follow.FollowingId, follow.FollowerId).
 		First(&follow).
 		Error

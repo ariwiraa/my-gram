@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"net/http"
+
+	"github.com/ariwiraa/my-gram/domain/dtos/request"
 
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/helpers"
@@ -16,11 +17,46 @@ type AuthHandler interface {
 	PostUserLoginHandler(ctx *gin.Context)
 	PutAccessTokenHandler(ctx *gin.Context)
 	LogoutHandler(ctx *gin.Context)
+	VerifyEmail(ctx *gin.Context)
+	ResendEmail(ctx *gin.Context)
 }
 
 type authHandler struct {
 	authUsecase usecase.AuthenticationUsecase
 	validate    *validator.Validate
+}
+
+// ResendEmail implements AuthHandler.
+func (h *authHandler) ResendEmail(ctx *gin.Context) {
+	var payload request.ResendEmailRequest
+
+	err := ctx.ShouldBindJSON(&payload)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = h.authUsecase.ResendEmail(ctx.Request.Context(), payload.Email)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helpers.SuccessResponse(ctx, http.StatusOK, "Resend Email verification success")
+}
+
+// VerifyEmail implements AuthHandler.
+func (h *authHandler) VerifyEmail(ctx *gin.Context) {
+	email := ctx.Query("email")
+	token := ctx.Query("token")
+
+	err := h.authUsecase.VerifyEmail(ctx.Request.Context(), email, token)
+	if err != nil {
+		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helpers.SuccessResponse(ctx, http.StatusOK, "Verifcation Email Success")
 }
 
 // PutAccessTokenHandler implements AuthHandler.
@@ -33,7 +69,7 @@ func (h *authHandler) PutAccessTokenHandler(ctx *gin.Context) {
 		return
 	}
 
-	err = h.authUsecase.ExistsByRefreshToken(payload.RefreshToken)
+	err = h.authUsecase.ExistsByRefreshToken(ctx.Request.Context(), payload.RefreshToken)
 	if err != nil {
 		return
 	}
@@ -62,7 +98,7 @@ func (h *authHandler) LogoutHandler(ctx *gin.Context) {
 		return
 	}
 
-	err = h.authUsecase.Delete(payload.RefreshToken)
+	err = h.authUsecase.Delete(ctx.Request.Context(), payload.RefreshToken)
 	if err != nil {
 		return
 	}
@@ -92,7 +128,7 @@ func (h *authHandler) PostUserLoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	loggedInUser, err := h.authUsecase.Login(payload)
+	loggedInUser, err := h.authUsecase.Login(ctx.Request.Context(), payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusUnauthorized, err.Error())
 		return
@@ -101,7 +137,7 @@ func (h *authHandler) PostUserLoginHandler(ctx *gin.Context) {
 	accessToken := helpers.NewAccessToken(uint64(loggedInUser.ID)).GenerateAccessToken()
 	refreshToken := helpers.NewRefreshToken(uint64(loggedInUser.ID)).GenerateRefreshToken()
 
-	err = h.authUsecase.Add(refreshToken)
+	err = h.authUsecase.Add(ctx.Request.Context(), refreshToken)
 	if err != nil {
 		return
 	}
@@ -140,7 +176,7 @@ func (h *authHandler) PostUserRegisterHandler(ctx *gin.Context) {
 		return
 	}
 
-	newUser, err := h.authUsecase.Register(payload)
+	newUser, err := h.authUsecase.Register(ctx.Request.Context(), payload)
 	if err != nil {
 		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
 		return

@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"context"
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"github.com/ariwiraa/my-gram/domain/dtos/response"
@@ -8,6 +9,7 @@ import (
 	"github.com/ariwiraa/my-gram/usecase"
 	"github.com/google/uuid"
 	"log"
+	"time"
 )
 
 type photoUsecase struct {
@@ -20,7 +22,10 @@ type photoUsecase struct {
 }
 
 // Create implements PhotoUsecase
-func (u *photoUsecase) Create(payload request.PhotoRequest, userId uint, fileLocation string) (*response.PhotoResponse, error) {
+func (u *photoUsecase) Create(ctx context.Context, payload request.PhotoRequest, userId uint, fileLocation string) (*response.PhotoResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	photo := domain.Photo{
 		ID:       uuid.NewString(),
 		Caption:  payload.Caption,
@@ -29,9 +34,9 @@ func (u *photoUsecase) Create(payload request.PhotoRequest, userId uint, fileLoc
 	}
 
 	usernameCh := make(chan string)
-	go u.fetchUsername(userId, usernameCh)
+	go u.fetchUsername(ctx, userId, usernameCh)
 
-	newPhoto, err := u.photoRepository.Create(photo)
+	newPhoto, err := u.photoRepository.Create(ctx, photo)
 	if err != nil {
 		log.Println("error create photo: ", err)
 		return &response.PhotoResponse{}, err
@@ -48,7 +53,7 @@ func (u *photoUsecase) Create(payload request.PhotoRequest, userId uint, fileLoc
 	for _, photoTag := range payload.Tags {
 		tag := domain.Tag{Name: photoTag}
 
-		newTag, err := u.tagRepository.AddTagIfNotExists(tag.Name)
+		newTag, err := u.tagRepository.AddTagIfNotExists(ctx, tag.Name)
 		if err != nil {
 			log.Println("error create tag: ", err)
 			return &response.PhotoResponse{}, err
@@ -59,7 +64,7 @@ func (u *photoUsecase) Create(payload request.PhotoRequest, userId uint, fileLoc
 			TagId:   newTag.ID,
 		}
 
-		err = u.photoTagsRepository.Add(photoTags)
+		err = u.photoTagsRepository.Add(ctx, photoTags)
 		if err != nil {
 			log.Println("Failed to associate tag with photo: ", err)
 			return &response.PhotoResponse{}, err
@@ -74,38 +79,44 @@ func (u *photoUsecase) Create(payload request.PhotoRequest, userId uint, fileLoc
 }
 
 // Delete implements PhotoUsecase
-func (u *photoUsecase) Delete(id string) {
-	photo, err := u.photoRepository.FindById(id)
+func (u *photoUsecase) Delete(ctx context.Context, id string) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	photo, err := u.photoRepository.FindById(ctx, id)
 	if err != nil {
 		return
 	}
 
-	u.photoRepository.Delete(photo)
-	err = u.photoTagsRepository.Delete(photo.ID)
+	u.photoRepository.Delete(ctx, photo)
+	err = u.photoTagsRepository.Delete(ctx, photo.ID)
 	if err != nil {
 		return
 	}
 }
 
 // GetAll implements PhotoUsecase
-func (u *photoUsecase) GetAll() ([]domain.Photo, error) {
-	photos, err := u.photoRepository.FindAll()
+func (u *photoUsecase) GetAll(ctx context.Context) ([]domain.Photo, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	photos, err := u.photoRepository.FindAll(ctx)
 	if err != nil {
 		return photos, err
 	}
 
 	for _, photo := range photos {
-		totalComments, _ := u.commentRepository.CountCommentsByPhotoId(photo.ID)
+		totalComments, _ := u.commentRepository.CountCommentsByPhotoId(ctx, photo.ID)
 		photo.TotalComment = totalComments
 
-		photoTags, err := u.photoTagsRepository.FindPhotoTagsByPhotoId(photo.ID)
+		photoTags, err := u.photoTagsRepository.FindPhotoTagsByPhotoId(ctx, photo.ID)
 		// Jika tidak ada tag, maka return photo
 		if err != nil {
 			return photos, nil
 		}
 
 		for _, photoTag := range photoTags {
-			tag, err := u.tagRepository.FindById(photoTag.TagId)
+			tag, err := u.tagRepository.FindById(ctx, photoTag.TagId)
 			if err != nil {
 				return photos, err
 			}
@@ -117,8 +128,11 @@ func (u *photoUsecase) GetAll() ([]domain.Photo, error) {
 	return photos, nil
 }
 
-func (u *photoUsecase) GetById(id string) (*response.PhotoResponse, error) {
-	photo, err := u.photoRepository.FindById(id)
+func (u *photoUsecase) GetById(ctx context.Context, id string) (*response.PhotoResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	photo, err := u.photoRepository.FindById(ctx, id)
 	if err != nil {
 		log.Printf("Error fetching photo by ID: %v", err)
 		return &response.PhotoResponse{}, err
@@ -128,13 +142,13 @@ func (u *photoUsecase) GetById(id string) (*response.PhotoResponse, error) {
 	totalCommentsCh := make(chan int64)
 	totalLikesCh := make(chan int64)
 
-	go u.calculateTotalComments(photo.ID, totalCommentsCh)
-	go u.calculateTotalLikes(photo.ID, totalLikesCh)
+	go u.calculateTotalComments(ctx, photo.ID, totalCommentsCh)
+	go u.calculateTotalLikes(ctx, photo.ID, totalLikesCh)
 
 	totalComments := <-totalCommentsCh
 	totalLikes := <-totalLikesCh
 
-	photoTags, err := u.photoTagsRepository.FindPhotoTagsByPhotoId(id)
+	photoTags, err := u.photoTagsRepository.FindPhotoTagsByPhotoId(ctx, id)
 	if err != nil {
 		log.Printf("Error fetching photo tags: %v", err)
 		return &response.PhotoResponse{}, err
@@ -150,14 +164,17 @@ func (u *photoUsecase) GetById(id string) (*response.PhotoResponse, error) {
 		TotalLikes:    totalLikes,
 	}
 
-	u.processPhotoTags(photoTags, &responsePhoto)
+	u.processPhotoTags(ctx, photoTags, &responsePhoto)
 
 	return &responsePhoto, nil
 }
 
 // Update implements PhotoUsecase
-func (u *photoUsecase) Update(payload request.UpdatePhotoRequest, id string, userId uint) (*response.PhotoResponse, error) {
-	photo, err := u.photoRepository.FindByIdAndByUserId(id, userId)
+func (u *photoUsecase) Update(ctx context.Context, payload request.UpdatePhotoRequest, id string, userId uint) (*response.PhotoResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	photo, err := u.photoRepository.FindByIdAndByUserId(ctx, id, userId)
 	if err != nil {
 		log.Printf("Error fetching photo by id and user id %v", err)
 		return &response.PhotoResponse{}, err
@@ -165,13 +182,13 @@ func (u *photoUsecase) Update(payload request.UpdatePhotoRequest, id string, use
 
 	photo.Caption = payload.Caption
 
-	err = u.photoTagsRepository.Delete(id)
+	err = u.photoTagsRepository.Delete(ctx, id)
 	if err != nil {
 		log.Printf("Error deleting association photo tag %v", err)
 		return &response.PhotoResponse{}, err
 	}
 
-	updatedPhoto, err := u.photoRepository.Update(*photo, id)
+	updatedPhoto, err := u.photoRepository.Update(ctx, *photo, id)
 	if err != nil {
 		log.Printf("Error updating photo %v", err)
 		return &response.PhotoResponse{}, err
@@ -181,9 +198,9 @@ func (u *photoUsecase) Update(payload request.UpdatePhotoRequest, id string, use
 	totalLikesCh := make(chan int64)
 	usernameCh := make(chan string)
 
-	go u.fetchUsername(userId, usernameCh)
-	go u.calculateTotalComments(photo.ID, totalCommentsCh)
-	go u.calculateTotalLikes(photo.ID, totalLikesCh)
+	go u.fetchUsername(ctx, userId, usernameCh)
+	go u.calculateTotalComments(ctx, photo.ID, totalCommentsCh)
+	go u.calculateTotalLikes(ctx, photo.ID, totalLikesCh)
 
 	totalComments := <-totalCommentsCh
 	totalLikes := <-totalLikesCh
@@ -202,7 +219,7 @@ func (u *photoUsecase) Update(payload request.UpdatePhotoRequest, id string, use
 	for _, photoTag := range payload.Tags {
 		tag := domain.Tag{Name: photoTag}
 
-		newTag, err := u.tagRepository.AddTagIfNotExists(tag.Name)
+		newTag, err := u.tagRepository.AddTagIfNotExists(ctx, tag.Name)
 		if err != nil {
 			log.Printf("Error adding tag %v", err)
 			return &responsePhoto, err
@@ -213,7 +230,7 @@ func (u *photoUsecase) Update(payload request.UpdatePhotoRequest, id string, use
 			TagId:   newTag.ID,
 		}
 
-		err = u.photoTagsRepository.Add(photoTags)
+		err = u.photoTagsRepository.Add(ctx, photoTags)
 		if err != nil {
 			log.Printf("Failed to associate tag with photo %v", err)
 			return &responsePhoto, err
@@ -226,24 +243,27 @@ func (u *photoUsecase) Update(payload request.UpdatePhotoRequest, id string, use
 	return &responsePhoto, nil
 }
 
-func (u *photoUsecase) GetAllPhotosByUserId(userId uint) ([]domain.Photo, error) {
-	photos, err := u.photoRepository.FindByUserId(userId)
+func (u *photoUsecase) GetAllPhotosByUserId(ctx context.Context, userId uint) ([]domain.Photo, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	photos, err := u.photoRepository.FindByUserId(ctx, userId)
 	if err != nil {
 		return photos, err
 	}
 
 	for _, photo := range photos {
-		totalComments, _ := u.commentRepository.CountCommentsByPhotoId(photo.ID)
+		totalComments, _ := u.commentRepository.CountCommentsByPhotoId(ctx, photo.ID)
 		photo.TotalComment = totalComments
 
-		photoTags, err := u.photoTagsRepository.FindPhotoTagsByPhotoId(photo.ID)
+		photoTags, err := u.photoTagsRepository.FindPhotoTagsByPhotoId(ctx, photo.ID)
 		// Jika tidak ada tag, maka return photo
 		if err != nil {
 			return photos, nil
 		}
 
 		for _, photoTag := range photoTags {
-			tag, err := u.tagRepository.FindById(photoTag.TagId)
+			tag, err := u.tagRepository.FindById(ctx, photoTag.TagId)
 			if err != nil {
 				return photos, err
 			}
@@ -256,8 +276,8 @@ func (u *photoUsecase) GetAllPhotosByUserId(userId uint) ([]domain.Photo, error)
 	return photos, nil
 }
 
-func (u *photoUsecase) calculateTotalComments(photoID string, resultCh chan<- int64) {
-	totalComments, err := u.commentRepository.CountCommentsByPhotoId(photoID)
+func (u *photoUsecase) calculateTotalComments(ctx context.Context, photoID string, resultCh chan<- int64) {
+	totalComments, err := u.commentRepository.CountCommentsByPhotoId(ctx, photoID)
 	if err != nil {
 		log.Printf("Error fetching total comments: %v", err)
 		resultCh <- 0
@@ -267,8 +287,8 @@ func (u *photoUsecase) calculateTotalComments(photoID string, resultCh chan<- in
 	resultCh <- totalComments
 }
 
-func (u *photoUsecase) calculateTotalLikes(photoID string, resultCh chan<- int64) {
-	totalLikes, err := u.userLikesPhotoRepository.CountUsersWhoLikedPhotoByPhotoId(photoID)
+func (u *photoUsecase) calculateTotalLikes(ctx context.Context, photoID string, resultCh chan<- int64) {
+	totalLikes, err := u.userLikesPhotoRepository.CountUsersWhoLikedPhotoByPhotoId(ctx, photoID)
 	if err != nil {
 		log.Printf("Error fetching total likes: %v", err)
 		resultCh <- 0
@@ -278,8 +298,8 @@ func (u *photoUsecase) calculateTotalLikes(photoID string, resultCh chan<- int64
 	resultCh <- totalLikes
 }
 
-func (u *photoUsecase) fetchUsername(userId uint, resultCh chan<- string) {
-	user, err := u.userRepository.FindById(userId)
+func (u *photoUsecase) fetchUsername(ctx context.Context, userId uint, resultCh chan<- string) {
+	user, err := u.userRepository.FindById(ctx, userId)
 	if err != nil {
 		log.Printf("Error fetching user: %v", err)
 		return
@@ -288,9 +308,9 @@ func (u *photoUsecase) fetchUsername(userId uint, resultCh chan<- string) {
 	resultCh <- user.Username
 }
 
-func (u *photoUsecase) processPhotoTags(photoTags []domain.PhotoTags, responsePhoto *response.PhotoResponse) {
+func (u *photoUsecase) processPhotoTags(ctx context.Context, photoTags []domain.PhotoTags, responsePhoto *response.PhotoResponse) {
 	for _, photoTag := range photoTags {
-		tag, err := u.tagRepository.FindById(photoTag.TagId)
+		tag, err := u.tagRepository.FindById(ctx, photoTag.TagId)
 		if err != nil {
 			log.Printf("Error fetching tag: %v", err)
 			return

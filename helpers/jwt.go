@@ -2,20 +2,21 @@ package helpers
 
 import (
 	"errors"
+	"github.com/ariwiraa/my-gram/config"
 	"log"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )
 
-// var myAccessToken = os.Getenv("TOKENKEY")
-// var myRefreshToken = []byte(config.LoadJWTConfig().GetJWTRefreshKey())
+var myAccessToken = []byte(config.LoadJwtConfig().GetTokenKey())
+var myRefreshToken = []byte(config.LoadJwtConfig().GetRefreshKey())
+var accessTokenExpiry = config.LoadJwtConfig().GetTokenExpiry()
+var refreshTokenExpiry = config.LoadJwtConfig().GetRefreshExpiry()
 
-// TODO: Sementara masih hardcode, nanti ganti ke env
-var myAccessToken = []byte("access_token")
-var myRefreshToken = []byte("refresh_token")
-var accessTokenExpiry = 1000 * time.Minute
-var refreshTokenExpiry = 10000 * time.Minute
+type jwtConfig struct {
+	cnf *config.Config
+}
 
 type claims struct {
 	Id uint64
@@ -26,7 +27,7 @@ func NewAccessToken(id uint64) *claims {
 	return &claims{
 		Id: id,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Duration(accessTokenExpiry)).Unix(),
+			ExpiresAt: time.Now().Add(accessTokenExpiry).Unix(),
 		},
 	}
 }
@@ -44,7 +45,7 @@ func (c *claims) GenerateAccessToken() string {
 	parsetoken := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
 	signedToken, err := parsetoken.SignedString(myAccessToken)
 	if err != nil {
-		log.Fatal("gagal membuat token")
+		log.Fatalf("error when generate access token: %s", err.Error())
 	}
 
 	return signedToken

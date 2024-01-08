@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"context"
 	"errors"
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/repository"
@@ -11,9 +12,9 @@ type userLikesPhotoRepository struct {
 	db *gorm.DB
 }
 
-func (r *userLikesPhotoRepository) FindUserWhoLiked(userId uint) (*domain.User, error) {
+func (r *userLikesPhotoRepository) FindUserWhoLiked(ctx context.Context, userId uint) (*domain.User, error) {
 	var user domain.User
-	err := r.db.Preload("LikedPhotos").Where("id = ?", userId).First(&user).Error
+	err := r.db.WithContext(ctx).Preload("LikedPhotos").Where("id = ?", userId).First(&user).Error
 	if err != nil {
 		return &user, err
 	}
@@ -21,9 +22,9 @@ func (r *userLikesPhotoRepository) FindUserWhoLiked(userId uint) (*domain.User, 
 	return &user, nil
 }
 
-func (r *userLikesPhotoRepository) FindPhotoWhoLiked(photoId string) (*domain.Photo, error) {
+func (r *userLikesPhotoRepository) FindPhotoWhoLiked(ctx context.Context, photoId string) (*domain.Photo, error) {
 	var photo domain.Photo
-	err := r.db.Debug().Preload("LikedBy").Where("id = ?", photoId).First(&photo).Error
+	err := r.db.WithContext(ctx).Preload("LikedBy").Where("id = ?", photoId).First(&photo).Error
 	if err != nil {
 		return &photo, err
 	}
@@ -32,9 +33,9 @@ func (r *userLikesPhotoRepository) FindPhotoWhoLiked(photoId string) (*domain.Ph
 }
 
 // CountLikesPhotoById implements UserLikesPhotoRepository
-func (r *userLikesPhotoRepository) CountUsersWhoLikedPhotoByPhotoId(photoId string) (int64, error) {
+func (r *userLikesPhotoRepository) CountUsersWhoLikedPhotoByPhotoId(ctx context.Context, photoId string) (int64, error) {
 	var totalLikes int64
-	err := r.db.Model(&domain.UserLikesPhoto{}).Where("photo_id = ?", photoId).Count(&totalLikes).Error
+	err := r.db.WithContext(ctx).Model(&domain.UserLikesPhoto{}).Where("photo_id = ?", photoId).Count(&totalLikes).Error
 	if err != nil {
 		return 0, err
 	}
@@ -43,18 +44,18 @@ func (r *userLikesPhotoRepository) CountUsersWhoLikedPhotoByPhotoId(photoId stri
 }
 
 // DeleteLike implements UserLikesPhotoRepository
-func (r *userLikesPhotoRepository) DeleteLike(photoId string, userId uint) {
+func (r *userLikesPhotoRepository) DeleteLike(ctx context.Context, photoId string, userId uint) {
 	var userLikesPhoto domain.UserLikesPhoto
 
-	err := r.db.Debug().Where("photo_id = ? AND user_id = ?", photoId, userId).Delete(&userLikesPhoto).Error
+	err := r.db.WithContext(ctx).Where("photo_id = ? AND user_id = ?", photoId, userId).Delete(&userLikesPhoto).Error
 	if err != nil {
 		return
 	}
 }
 
 // InsertLike implements UserLikesPhotoRepository
-func (r *userLikesPhotoRepository) InsertLike(userLikesPhoto domain.UserLikesPhoto) error {
-	err := r.db.Debug().Create(&userLikesPhoto).Error
+func (r *userLikesPhotoRepository) InsertLike(ctx context.Context, userLikesPhoto domain.UserLikesPhoto) error {
+	err := r.db.WithContext(ctx).Create(&userLikesPhoto).Error
 	if err != nil {
 		return err
 	}
@@ -63,10 +64,10 @@ func (r *userLikesPhotoRepository) InsertLike(userLikesPhoto domain.UserLikesPho
 }
 
 // VerifyUserLike implements UserLikesPhotoRepository
-func (r *userLikesPhotoRepository) VerifyUserLike(photoId string, userId uint) (bool, error) {
+func (r *userLikesPhotoRepository) VerifyUserLike(ctx context.Context, photoId string, userId uint) (bool, error) {
 	var userLikesPhoto domain.UserLikesPhoto
 
-	err := r.db.Debug().Where("photo_id = ? AND user_id = ?", photoId, userId).First(&userLikesPhoto).Error
+	err := r.db.WithContext(ctx).Where("photo_id = ? AND user_id = ?", photoId, userId).First(&userLikesPhoto).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil
