@@ -1,15 +1,17 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
 	Server   server
 	Database database
 	JWT      jwtEnvironment
+	Redis    RedisConfig
 }
 
 type server struct {
@@ -40,6 +42,11 @@ func InitializeConfig() *Config {
 			JWTRefreshKey: os.Getenv("REFRESH_KEY"),
 			TokenExpiry:   os.Getenv("TOKEN_EXPIRY"),
 			RefreshExpiry: os.Getenv("REFRESH_EXPIRY"),
+		},
+		RedisConfig{
+			Host:     os.Getenv("REDIS_HOST"),
+			Port:     os.Getenv("REDIS_PORT"),
+			Password: os.Getenv("REDIS_PASSWORD"),
 		},
 	}
 

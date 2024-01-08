@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -17,15 +18,21 @@ func main() {
 	cfg := config.InitializeConfig()
 
 	db := config.InitializeDB(cfg)
-	router := newApp(db)
+	redis, err := config.ConnectRedis(cfg)
+	if err != nil {
+		return
+	}
+
+	router := newApp(db, redis)
 
 	router.Run(":" + cfg.Server.Port)
 }
 
-func newApp(db *gorm.DB) *gin.Engine {
+func newApp(db *gorm.DB, client *redis.Client) *gin.Engine {
 	validate := validator.New()
 
 	// Repository
+	redisRepository := repositoryImpl.NewRedisRepositoryImpl(client)
 	commentRepository := repositoryImpl.NewCommentRepository(db)
 	photoRepository := repositoryImpl.NewPhotoRepository(db)
 	userRepository := repository.NewUserRepository(db)
@@ -59,7 +66,7 @@ func newApp(db *gorm.DB) *gin.Engine {
 	userHandler := handler.NewUserHandlerImpl(userUsecase)
 
 	// Auth Set
-	authUsecase := usecaseImpl.NewAuthenticationUsecaseImpl(authRepository, userRepository)
+	authUsecase := usecaseImpl.NewAuthenticationUsecaseImpl(authRepository, userRepository, redisRepository)
 	authHandler := handler.NewAuthHandler(authUsecase, validate)
 
 	// Follow Set
