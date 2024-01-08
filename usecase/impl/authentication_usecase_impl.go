@@ -70,6 +70,11 @@ func (u *authenticationUsecaseImpl) VerifyEmail(ctx context.Context, email, toke
 	currentTime := time.Now()
 	user.EmailVerificationAt = &currentTime
 
+	err = u.userRepository.UpdateUser(ctx, *user)
+	if err != nil {
+		return err
+	}
+
 	return nil
 
 }
@@ -126,19 +131,16 @@ func (u *authenticationUsecaseImpl) Login(ctx context.Context, payload request.U
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	username := payload.Username
-	password := payload.Password
-
-	user, err := u.userRepository.FindByUsername(ctx, username)
+	user, err := u.userRepository.FindByUsername(ctx, payload.Username)
 	if err != nil {
 		return &user, err
 	}
 
-	if user.ID == 0 {
-		return &user, err
+	if user.EmailVerificationAt == nil {
+		return &user, errors.New("email not verified. Please verif your email first")
 	}
 
-	comparePassword := helpers.ComparePass([]byte(user.Password), []byte(password))
+	comparePassword := helpers.ComparePass([]byte(user.Password), []byte(payload.Password))
 	if !comparePassword {
 		return &user, err
 	}

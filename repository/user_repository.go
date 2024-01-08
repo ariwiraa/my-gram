@@ -16,6 +16,7 @@ type UserRepository interface {
 	IsUsernameExists(ctx context.Context, username string) (bool, error)
 	IsEmailExists(ctx context.Context, email string) (bool, error)
 	IsUserExists(ctx context.Context, id uint) error
+	UpdateUser(ctx context.Context, user domain.User) error
 }
 
 type userRepository struct {
@@ -24,6 +25,16 @@ type userRepository struct {
 
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
+}
+
+// UpdateUser implements UserRepository.
+func (r *userRepository) UpdateUser(ctx context.Context, user domain.User) error {
+	err := r.db.WithContext(ctx).Where("id = ?", user.ID).Updates(&user).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // FindByEmail implements UserRepository.
