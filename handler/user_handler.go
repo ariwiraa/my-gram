@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 type UserHandler interface {
@@ -20,11 +22,30 @@ func (h *userHandlerImpl) GetUserProfileHandler(ctx *gin.Context) {
 
 	profileResponse, err := h.userUsecase.GetUserProfileByUsername(ctx.Request.Context(), username)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+
+		log.Printf("[GetUserProfileHandler, GetUserProfileByUsername] with error detail %v", err.Error())
+		errorMessage := helpers.FormatValidationErrors(err)
+
+		myErr, ok := helpers.ErrorMapping[errorMessage.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(errorMessage.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusBadRequest),
+		).Send(ctx)
 		return
+
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, profileResponse)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("get profile success"),
+		helpers.WithPayload(profileResponse),
+	).Send(ctx)
 }
 
 func NewUserHandlerImpl(userUsecase usecase.UserUsecase) UserHandler {

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/ariwiraa/my-gram/domain/dtos/request"
@@ -32,17 +33,34 @@ func (h *authHandler) ResendEmail(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		myErr := helpers.ErrorGeneral
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusInternalServerError),
+		).Send(ctx)
 		return
 	}
 
 	err = h.authUsecase.ResendEmail(ctx.Request.Context(), payload.Email)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, "Resend Email verification success")
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("resend email verification success"),
+	).Send(ctx)
 }
 
 // VerifyEmail implements AuthHandler.
@@ -52,11 +70,23 @@ func (h *authHandler) VerifyEmail(ctx *gin.Context) {
 
 	err := h.authUsecase.VerifyEmail(ctx.Request.Context(), email, token)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, "Verifcation Email Success")
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("verification email success"),
+	).Send(ctx)
 }
 
 // PutAccessTokenHandler implements AuthHandler.
@@ -65,7 +95,12 @@ func (h *authHandler) PutAccessTokenHandler(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		myErr := helpers.ErrorGeneral
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusInternalServerError),
+		).Send(ctx)
 		return
 	}
 
@@ -76,15 +111,29 @@ func (h *authHandler) PutAccessTokenHandler(ctx *gin.Context) {
 
 	claims, err := helpers.VerifyRefreshToken(payload.RefreshToken)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
+
 		return
 	}
 
 	accessToken := helpers.NewAccessToken(claims.Id).GenerateAccessToken()
 
-	helpers.SuccessResponse(ctx, http.StatusOK, gin.H{
-		"access_token": accessToken,
-	})
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("this is your new access token"),
+		helpers.WithPayload(gin.H{
+			"access_token": accessToken,
+		}),
+	).Send(ctx)
 
 }
 
@@ -94,7 +143,12 @@ func (h *authHandler) LogoutHandler(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		myErr := helpers.ErrorGeneral
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusInternalServerError),
+		).Send(ctx)
 		return
 	}
 
@@ -103,7 +157,10 @@ func (h *authHandler) LogoutHandler(ctx *gin.Context) {
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, nil)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("logout success"),
+	).Send(ctx)
 
 }
 
@@ -124,13 +181,45 @@ func (h *authHandler) PostUserLoginHandler(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		myErr := helpers.ErrorGeneral
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusInternalServerError),
+		).Send(ctx)
+		return
+	}
+
+	err = h.validate.Struct(payload)
+	if err != nil {
+		errorMessage := helpers.FormatValidationErrors(err)
+
+		myErr, ok := helpers.ErrorMapping[errorMessage.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(errorMessage.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusBadRequest),
+		).Send(ctx)
 		return
 	}
 
 	loggedInUser, err := h.authUsecase.Login(ctx.Request.Context(), payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusUnauthorized, err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
@@ -142,10 +231,15 @@ func (h *authHandler) PostUserLoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, gin.H{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
-	})
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("login success"),
+		helpers.WithPayload(gin.H{
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+		}),
+	).Send(ctx)
+
 }
 
 // UserRegister godoc
@@ -165,28 +259,54 @@ func (h *authHandler) PostUserRegisterHandler(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		myErr := helpers.ErrorGeneral
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusInternalServerError),
+		).Send(ctx)
 		return
 	}
 
 	err = h.validate.Struct(payload)
 	if err != nil {
 		errorMessage := helpers.FormatValidationErrors(err)
-		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
+
+		myErr, ok := helpers.ErrorMapping[errorMessage.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(errorMessage.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusBadRequest),
+		).Send(ctx)
 		return
 	}
 
 	newUser, err := h.authUsecase.Register(ctx.Request.Context(), payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[PostUserRegisterHandler, Register] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, gin.H{
-		"id":       newUser.ID,
-		"email":    newUser.Email,
-		"username": newUser.Username,
-	})
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusCreated),
+		helpers.WithMessage("please check your email for verification"),
+		helpers.WithPayload(newUser),
+	).Send(ctx)
 }
 
 func NewAuthHandler(authUsecase usecase.AuthenticationUsecase, validate *validator.Validate) AuthHandler {

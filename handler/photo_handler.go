@@ -2,8 +2,10 @@ package handler
 
 import (
 	"fmt"
-	"github.com/ariwiraa/my-gram/domain/dtos/request"
+	"log"
 	"net/http"
+
+	"github.com/ariwiraa/my-gram/domain/dtos/request"
 
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
@@ -45,7 +47,10 @@ func (h *photoHandler) DeletePhotoHandler(ctx *gin.Context) {
 	photoId := ctx.Param("id")
 
 	h.photoUsecase.Delete(ctx.Request.Context(), photoId)
-	helpers.SuccessResponse(ctx, http.StatusOK, nil)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("delete photo success"),
+	).Send(ctx)
 }
 
 // Getphoto godoc
@@ -66,11 +71,25 @@ func (h *photoHandler) GetPhotoHandler(ctx *gin.Context) {
 
 	photo, err := h.photoUsecase.GetById(ctx.Request.Context(), photoId)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[GetPhotoHandler, GetById] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, photo)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("get photo success"),
+		helpers.WithPayload(photo),
+	).Send(ctx)
 
 }
 
@@ -90,10 +109,25 @@ func (h *photoHandler) GetPhotoHandler(ctx *gin.Context) {
 func (h *photoHandler) GetPhotosHandler(ctx *gin.Context) {
 	photos, err := h.photoUsecase.GetAll(ctx.Request.Context())
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[GetPhotosHandler, GetAll] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
+		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, photos)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("get all photos success"),
+		helpers.WithPayload(photos),
+	).Send(ctx)
 }
 
 // Getphoto godoc
@@ -115,10 +149,25 @@ func (h *photoHandler) GetPhotosByUserIdHandler(ctx *gin.Context) {
 
 	photo, err := h.photoUsecase.GetAllPhotosByUserId(ctx.Request.Context(), userID)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[GetPhotosHandler, GetAll] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
+		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, photo)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("get all photos success"),
+		helpers.WithPayload(photo),
+	).Send(ctx)
 
 }
 
@@ -144,23 +193,57 @@ func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
 	// ambil data dari formdata
 	err := ctx.ShouldBindWith(&payload, binding.FormMultipart)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[PostPhotoHandler, ShouldBindWith] with error detail %v", err.Error())
+		myErr := helpers.ErrorGeneral
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusInternalServerError),
+		).Send(ctx)
 		return
 	}
 
 	err = h.validate.Struct(payload)
 	if err != nil {
+		log.Printf("[PostPhotoHandler, Struct] with error detail %v", err.Error())
 		errorMessage := helpers.FormatValidationErrors(err)
-		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
+
+		myErr, ok := helpers.ErrorMapping[errorMessage.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(errorMessage.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusBadRequest),
+		).Send(ctx)
 		return
 	}
 
 	file, _ := payload.PhotoUrl.Open()
 	defer file.Close()
 
-	if !helpers.IsImageFile(file) {
-		helpers.FailResponse(ctx, http.StatusBadRequest, "jenis ini tidak didukung")
+	fileSupported, err := helpers.IsImageFile(file)
+	if err != nil || !fileSupported {
+
+		log.Printf("[PostPhotoHandler, IsImageFile] with error detail %v", err.Error())
+		errorMessage := helpers.FormatValidationErrors(err)
+
+		myErr, ok := helpers.ErrorMapping[errorMessage.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(errorMessage.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusBadRequest),
+		).Send(ctx)
 		return
+
 	}
 
 	//tentukan destinasi penyimpanan file
@@ -169,17 +252,36 @@ func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
 	//save file yang diupload
 	err = ctx.SaveUploadedFile(payload.PhotoUrl, path)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+
+		helpers.NewResponse(
+			helpers.WithMessage("Error when uploaded file"),
+			helpers.WithError(err),
+			helpers.WithHttpCode(http.StatusInternalServerError),
+		).Send(ctx)
 		return
 	}
 
 	photo, err := h.photoUsecase.Create(ctx.Request.Context(), payload, userID, path)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[PostPhotoHandler, Create] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, photo)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusCreated),
+		helpers.WithMessage("create photo success"),
+		helpers.WithPayload(photo),
+	).Send(ctx)
 
 }
 
@@ -206,24 +308,56 @@ func (h *photoHandler) PutPhotoHandler(ctx *gin.Context) {
 	var payload request.UpdatePhotoRequest
 	err := ctx.ShouldBindWith(&payload, binding.FormMultipart)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[PutPhotoHandler, ShouldBindWith] with error detail %v", err.Error())
+		myErr := helpers.ErrorGeneral
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusInternalServerError),
+		).Send(ctx)
 		return
 	}
 
 	err = h.validate.Struct(payload)
 	if err != nil {
+		log.Printf("[PutPhotoHandler, Struct] with error detail %v", err.Error())
 		errorMessage := helpers.FormatValidationErrors(err)
-		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
+
+		myErr, ok := helpers.ErrorMapping[errorMessage.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(errorMessage.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusBadRequest),
+		).Send(ctx)
 		return
 	}
 
 	photo, err := h.photoUsecase.Update(ctx.Request.Context(), payload, photoId, userID)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[PutPhotoHandler, Update] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, photo)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusCreated),
+		helpers.WithMessage("update photo success"),
+		helpers.WithPayload(photo),
+	).Send(ctx)
 
 }
 

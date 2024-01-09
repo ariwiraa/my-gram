@@ -2,7 +2,7 @@ package impl
 
 import (
 	"context"
-	"errors"
+	"log"
 	"time"
 
 	"github.com/ariwiraa/my-gram/domain"
@@ -16,12 +16,17 @@ type userLikesPhotosUsecase struct {
 	userRepository  repository.UserRepository
 }
 
+func NewUserLikesPhotosUsecase(likesRepository repository.UserLikesPhotoRepository, photoRepository repository.PhotoRepository, userRepository repository.UserRepository) usecase.UserLikesPhotosUsecase {
+	return &userLikesPhotosUsecase{likesRepository: likesRepository, photoRepository: photoRepository, userRepository: userRepository}
+}
+
 func (u *userLikesPhotosUsecase) GetPhotosLikedByUserId(ctx context.Context, userId uint) ([]domain.Photo, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	user, err := u.likesRepository.FindUserWhoLiked(ctx, userId)
 	if err != nil {
+		log.Printf("[GetPhotosLikedByUserId, FindUserWhoLiked] with error detail %v", err.Error())
 		return []domain.Photo{}, err
 	}
 
@@ -36,7 +41,8 @@ func (u *userLikesPhotosUsecase) GetPhotosLikedByUserId(ctx context.Context, use
 	// Jadi harus dihindari call database di dalam loop
 	photos, err := u.photoRepository.FindPhotosByIDList(ctx, photoIds)
 	if err != nil {
-		return photos, errors.New("id on the list is not found")
+		log.Printf("[GetPhotosLikedByUserId, FindPhotosByIDList] with error detail %v", err.Error())
+		return photos, err
 	}
 
 	return photos, nil
@@ -49,7 +55,8 @@ func (u *userLikesPhotosUsecase) LikeThePhoto(ctx context.Context, photoId strin
 
 	err := u.photoRepository.IsPhotoExist(ctx, photoId)
 	if err != nil {
-		return "", errors.New("foto tidak tersedia")
+		log.Printf("[LikeThePhoto, IsPhotoExist] with error detail %v", err.Error())
+		return "", err
 	}
 
 	userLike, _ := u.likesRepository.VerifyUserLike(ctx, photoId, userId)
@@ -72,21 +79,19 @@ func (u *userLikesPhotosUsecase) LikeThePhoto(ctx context.Context, photoId strin
 
 }
 
-func NewUserLikesPhotosUsecase(likesRepository repository.UserLikesPhotoRepository, photoRepository repository.PhotoRepository, userRepository repository.UserRepository) usecase.UserLikesPhotosUsecase {
-	return &userLikesPhotosUsecase{likesRepository: likesRepository, photoRepository: photoRepository, userRepository: userRepository}
-}
-
 func (u *userLikesPhotosUsecase) GetUsersWhoLikedPhotoByPhotoId(ctx context.Context, photoId string) ([]domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	err := u.photoRepository.IsPhotoExist(ctx, photoId)
 	if err != nil {
+		log.Printf("[GetUsersWhoLikedPhotoByPhotoId, IsPhotoExist] with error detail %v", err.Error())
 		return []domain.User{}, err
 	}
 
 	photo, err := u.likesRepository.FindPhotoWhoLiked(ctx, photoId)
 	if err != nil {
+		log.Printf("[GetUsersWhoLikedPhotoByPhotoId, FindPhotoWhoLiked] with error detail %v", err.Error())
 		return []domain.User{}, err
 	}
 
@@ -99,6 +104,7 @@ func (u *userLikesPhotosUsecase) GetUsersWhoLikedPhotoByPhotoId(ctx context.Cont
 
 	users, err := u.userRepository.FindUsersByIDList(ctx, userIds)
 	if err != nil {
+		log.Printf("[GetUsersWhoLikedPhotoByPhotoId, FindUsersByIDList] with error detail %v", err.Error())
 		return users, err
 	}
 

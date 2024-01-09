@@ -3,7 +3,10 @@ package impl
 import (
 	"context"
 	"errors"
+	"log"
+
 	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/repository"
 	"gorm.io/gorm"
 )
@@ -17,7 +20,11 @@ func (r *commentRepository) CountCommentsByPhotoId(ctx context.Context, photoId 
 	var totalComment int64
 	err := r.db.WithContext(ctx).Model(&domain.Comment{}).Where("photo_id = ?", photoId).Count(&totalComment).Error
 	if err != nil {
-		return 0, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, helpers.ErrPhotoNotFound
+		}
+		log.Printf("[CountCommentsByPhotoId] with error detail %v", err.Error())
+		return 0, helpers.ErrRepository
 	}
 
 	return totalComment, nil
@@ -31,7 +38,8 @@ func NewCommentRepository(db *gorm.DB) repository.CommentRepository {
 func (r *commentRepository) Create(ctx context.Context, comment domain.Comment) (*domain.Comment, error) {
 	err := r.db.WithContext(ctx).Create(&comment).Error
 	if err != nil {
-		return &comment, err
+		log.Printf("[Create] with error detail %v", err.Error())
+		return &comment, helpers.ErrRepository
 	}
 
 	return &comment, nil
@@ -43,6 +51,10 @@ func (r *commentRepository) Delete(ctx context.Context, id uint) {
 
 	err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&comment).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return
+		}
+		log.Printf("[Delete] with error detail %v", err.Error())
 		return
 	}
 }
@@ -53,7 +65,11 @@ func (r *commentRepository) FindAllCommentsByPhotoId(ctx context.Context, photoI
 
 	err := r.db.WithContext(ctx).Find(&comments, "photo_id = ?", photoId).Error
 	if err != nil {
-		return comments, errors.New("photo doesn't exists")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return comments, helpers.ErrPhotoNotFound
+		}
+		log.Printf("[FindCommentsByPhotoId] with error detail %v", err.Error())
+		return comments, helpers.ErrRepository
 	}
 	return comments, nil
 }
@@ -64,8 +80,10 @@ func (r *commentRepository) FindById(ctx context.Context, id uint) (*domain.Comm
 	err := r.db.WithContext(ctx).First(&comment, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &comment, errors.New("comment doesn't exists")
+			return &comment, helpers.ErrCommentNotFound
 		}
+		log.Printf("[FindById] with error detail %v", err.Error())
+		return &comment, helpers.ErrRepository
 	}
 
 	return &comment, err
@@ -76,7 +94,11 @@ func (r *commentRepository) Update(ctx context.Context, comment domain.Comment, 
 
 	err := r.db.WithContext(ctx).Model(&comment).Where("id = ?", id).Updates(&comment).Error
 	if err != nil {
-		return &comment, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &comment, helpers.ErrCommentNotFound
+		}
+		log.Printf("[Update] with error detail %v", err.Error())
+		return &comment, helpers.ErrRepository
 	}
 
 	return &comment, nil

@@ -2,8 +2,11 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"log"
 
 	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/helpers"
 	"gorm.io/gorm"
 )
 
@@ -31,7 +34,11 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 func (r *userRepository) UpdateUser(ctx context.Context, user domain.User) error {
 	err := r.db.WithContext(ctx).Where("id = ?", user.ID).Updates(&user).Error
 	if err != nil {
-		return err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return helpers.ErrUserNotFound
+		}
+		log.Printf("[UpdateUser] with error detail %v", err.Error())
+		return helpers.ErrRepository
 	}
 
 	return nil
@@ -42,7 +49,11 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 	var user domain.User
 	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
-		return &user, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &user, helpers.ErrEmailNotFound
+		}
+		log.Printf("[FindByEmail] with error detail %v", err.Error())
+		return &user, helpers.ErrRepository
 	}
 
 	return &user, nil
@@ -52,7 +63,11 @@ func (r *userRepository) FindById(ctx context.Context, id uint) (*domain.User, e
 	var user domain.User
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
 	if err != nil {
-		return &user, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &user, helpers.ErrUserNotFound
+		}
+		log.Printf("[FindById] with error detail %v", err.Error())
+		return &user, helpers.ErrRepository
 	}
 
 	return &user, nil
@@ -62,7 +77,11 @@ func (r *userRepository) IsUserExists(ctx context.Context, id uint) error {
 	var user domain.User
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
 	if err != nil {
-		return err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return helpers.ErrUserNotFound
+		}
+		log.Printf("[IsUserExists] with error detail %v", err.Error())
+		return helpers.ErrRepository
 	}
 
 	return nil
@@ -72,7 +91,11 @@ func (r *userRepository) FindUsersByIDList(ctx context.Context, userIds []uint) 
 	var users []domain.User
 	err := r.db.WithContext(ctx).Preload("Photos").Find(&users, "users.id IN ?", userIds).Error
 	if err != nil {
-		return users, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return users, helpers.ErrUserNotFound
+		}
+		log.Printf("[FindUsersByIDList] with error detail %v", err.Error())
+		return users, helpers.ErrRepository
 	}
 
 	return users, nil
@@ -86,7 +109,8 @@ func (r *userRepository) IsEmailExists(ctx context.Context, email string) (bool,
 		if err == gorm.ErrRecordNotFound {
 			return false, nil
 		}
-		return false, err
+		log.Printf("[IsEmailExists] with error detail %v", err.Error())
+		return false, helpers.ErrRepository
 	}
 
 	return true, nil
@@ -100,7 +124,8 @@ func (r *userRepository) IsUsernameExists(ctx context.Context, username string) 
 		if err == gorm.ErrRecordNotFound {
 			return false, nil
 		}
-		return false, err
+		log.Printf("[IsUsernameExists] with error detail %v", err.Error())
+		return false, helpers.ErrRepository
 	}
 
 	return true, nil
@@ -117,7 +142,11 @@ func (r *userRepository) FindByUsername(ctx context.Context, username string) (d
 		Error
 
 	if err != nil {
-		return user, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return user, helpers.ErrUserNotFound
+		}
+		log.Printf("[FindByUsername] with error detail %v", err.Error())
+		return user, helpers.ErrRepository
 	}
 
 	return user, nil
@@ -127,7 +156,7 @@ func (r *userRepository) FindByUsername(ctx context.Context, username string) (d
 func (r *userRepository) AddUser(ctx context.Context, user domain.User) (domain.User, error) {
 	err := r.db.WithContext(ctx).Create(&user).Error
 	if err != nil {
-		return user, err
+		return user, helpers.ErrRepository
 	}
 
 	return user, nil

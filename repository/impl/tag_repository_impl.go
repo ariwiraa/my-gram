@@ -3,8 +3,10 @@ package impl
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/repository"
 	"gorm.io/gorm"
 )
@@ -18,7 +20,11 @@ func (r *tagRepositoryImpl) FindById(ctx context.Context, id uint) (*domain.Tag,
 	var tag domain.Tag
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&tag).Error
 	if err != nil {
-		return nil, errors.New("tag not found")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &tag, helpers.ErrTagNotFound
+		}
+		log.Printf("[FindById] with error details %v", err.Error())
+		return nil, helpers.ErrRepository
 	}
 
 	return &tag, nil
@@ -47,7 +53,8 @@ func (r *tagRepositoryImpl) AddTagIfNotExists(ctx context.Context, name string) 
 func (r *tagRepositoryImpl) Add(ctx context.Context, tag domain.Tag) (*domain.Tag, error) {
 	err := r.db.WithContext(ctx).Create(&tag).Error
 	if err != nil {
-		return nil, err
+		log.Printf("[Add] with error details %v", err.Error())
+		return nil, helpers.ErrRepository
 	}
 
 	return &tag, nil
@@ -58,7 +65,11 @@ func (r *tagRepositoryImpl) FindByName(ctx context.Context, name string) ([]doma
 	var tags []domain.Tag
 	err := r.db.WithContext(ctx).Where("lower(name) LIKE lower(?)", "%"+name+"%").Find(&tags).Error
 	if err != nil {
-		return nil, errors.New("tag Not Found")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return tags, helpers.ErrTagNotFound
+		}
+		log.Printf("[FindByName] with error details %v", err.Error())
+		return nil, helpers.ErrRepository
 	}
 
 	return tags, nil

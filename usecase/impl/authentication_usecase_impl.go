@@ -2,7 +2,6 @@ package impl
 
 import (
 	"context"
-	"errors"
 	"log"
 	"strconv"
 	"time"
@@ -36,7 +35,7 @@ func (u *authenticationUsecaseImpl) ResendEmail(ctx context.Context, email strin
 	user, err := u.userRepository.FindByEmail(ctx, email)
 	if err != nil {
 		log.Printf("[ResendEmail, FindByEmail] with error detail %v", err.Error())
-		return errors.New("email is not found")
+		return err
 	}
 
 	token := helpers.GenerateRandomOTP()
@@ -52,13 +51,13 @@ func (u *authenticationUsecaseImpl) ResendEmail(ctx context.Context, email strin
 	err = helpers.Mail(&configMail).Send()
 	if err != nil {
 		log.Printf("[ResendEmail, Mail] with error detail %v", err.Error())
-		return errors.New("failed send email")
+		return helpers.ErrorFailedSendEmail
 	}
 
 	err = u.redisRepository.Set(ctx, user.Email, tokenString, 5*time.Minute)
 	if err != nil {
 		log.Printf("[ResendEmail, Set] with error detail %v", err.Error())
-		return err
+		return helpers.ErrRepository
 	}
 
 	return nil
@@ -67,20 +66,19 @@ func (u *authenticationUsecaseImpl) ResendEmail(ctx context.Context, email strin
 
 // VerifyEmail implements usecase.AuthenticationUsecase.
 func (u *authenticationUsecaseImpl) VerifyEmail(ctx context.Context, email, token string) error {
-	// TODO: Periksa apakah token sudah lebih dari 5 menit menggunakan redis
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	user, err := u.userRepository.FindByEmail(ctx, email)
 	if err != nil {
 		log.Printf("[VerifyEmail, FindByEmail] with error detail %v", err.Error())
-		return errors.New("email is not found")
+		return err
 	}
 
 	value, err := u.redisRepository.Get(ctx, user.Email)
 	if err != nil {
 		log.Printf("[VerifyEmail, Get] with error detail %v", err.Error())
-		return errors.New("your link is expired")
+		return helpers.ErrLinkExpired
 	}
 
 	if value == token && token != "" {
@@ -111,7 +109,7 @@ func (u *authenticationUsecaseImpl) Register(ctx context.Context, payload reques
 	}
 
 	if isEmailUsed {
-		return &user, errors.New("email sudah digunakan")
+		return &user, helpers.ErrEmailAlreadyUserd
 	}
 
 	isUsernameUsed, err := u.userRepository.IsUsernameExists(ctx, payload.Username)
@@ -121,7 +119,7 @@ func (u *authenticationUsecaseImpl) Register(ctx context.Context, payload reques
 	}
 
 	if isUsernameUsed {
-		return &user, errors.New("username sudah digunakan")
+		return &user, helpers.ErrorUsernameAlreadyUsed
 	}
 
 	hashingPassword := helpers.HashPass(payload.Password)
@@ -151,14 +149,14 @@ func (u *authenticationUsecaseImpl) Register(ctx context.Context, payload reques
 	err = helpers.Mail(&configMail).Send()
 	if err != nil {
 		log.Printf("[Register, Mail] with error detail %v", err.Error())
-		return &newUser, errors.New("failed send email")
+		return &newUser, helpers.ErrFailedSendEmail
 	}
 
 	// TODO: Simpan token ke redis dengan TTL 5 menit
 	err = u.redisRepository.Set(ctx, newUser.Email, tokenString, 5*time.Minute)
 	if err != nil {
 		log.Printf("[VerifyEmail, Set] with error detail %v", err.Error())
-		return &newUser, err
+		return &newUser, helpers.ErrRepository
 	}
 
 	return &newUser, nil
@@ -175,13 +173,13 @@ func (u *authenticationUsecaseImpl) Login(ctx context.Context, payload request.U
 	}
 
 	if user.EmailVerificationAt == nil {
-		return &user, errors.New("email not verified. Please verif your email first")
+		return &user, helpers.ErrEmailNotVerified
 	}
 
 	comparePassword := helpers.ComparePass([]byte(user.Password), []byte(payload.Password))
 	if !comparePassword {
 		log.Printf("[Login, ComparePass] with error detail %v", err.Error())
-		return &user, errors.New("password is not match")
+		return &user, helpers.ErrPasswordNotMatch
 	}
 
 	return &user, nil

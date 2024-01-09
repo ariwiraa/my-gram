@@ -2,12 +2,13 @@ package impl
 
 import (
 	"context"
-	"errors"
+	"log"
+	"time"
+
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos/request"
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/usecase"
-	"time"
 )
 
 type commentUsecase struct {
@@ -24,7 +25,8 @@ func (u *commentUsecase) Create(ctx context.Context, payload request.CommentRequ
 
 	err := u.photoRepository.IsPhotoExist(ctx, payload.PhotoId)
 	if err != nil {
-		return &comment, errors.New("photo tidak ada")
+		log.Printf("[Create, IsPhotoExist] with error detail %v", err.Error())
+		return &comment, err
 	}
 
 	comment = domain.Comment{
@@ -35,6 +37,7 @@ func (u *commentUsecase) Create(ctx context.Context, payload request.CommentRequ
 
 	newComment, err := u.commentRepository.Create(ctx, comment)
 	if err != nil {
+		log.Printf("[Create, Create] with error detail %v", err.Error())
 		return newComment, err
 	}
 
@@ -48,11 +51,13 @@ func (u *commentUsecase) Delete(ctx context.Context, id uint, photoId string) {
 
 	err := u.photoRepository.IsPhotoExist(ctx, photoId)
 	if err != nil {
+		log.Printf("[Delete, IsPhotoExist] with error detail %v", err.Error())
 		return
 	}
 
 	comment, err := u.commentRepository.FindById(ctx, id)
 	if err != nil {
+		log.Printf("[Delete, FindById] with error detail %v", err.Error())
 		return
 	}
 
@@ -66,11 +71,13 @@ func (u *commentUsecase) GetAllCommentsByPhotoId(ctx context.Context, photoId st
 
 	err := u.photoRepository.IsPhotoExist(ctx, photoId)
 	if err != nil {
+		log.Printf("[GetAllCommentsByPhotoId, IsPhotoExist] with error detail %v", err.Error())
 		return nil, err
 	}
 
 	comments, err := u.commentRepository.FindAllCommentsByPhotoId(ctx, photoId)
 	if err != nil {
+		log.Printf("[GetAllCommentsByPhotoId, FindAllCommentsByPhotoId] with error detail %v", err.Error())
 		return comments, err
 	}
 
@@ -84,11 +91,13 @@ func (u *commentUsecase) GetById(ctx context.Context, id uint, photoId string) (
 
 	err := u.photoRepository.IsPhotoExist(ctx, photoId)
 	if err != nil {
+		log.Printf("[GetById, IsPhotoExist] with error detail %v", err.Error())
 		return &domain.Comment{}, err
 	}
 
 	comment, err := u.commentRepository.FindById(ctx, id)
 	if err != nil {
+		log.Printf("[GetById, FindById] with error detail %v", err.Error())
 		return comment, err
 	}
 
@@ -102,6 +111,7 @@ func (u *commentUsecase) Update(ctx context.Context, payload request.CommentRequ
 
 	comment, err := u.commentRepository.FindById(ctx, id)
 	if err != nil {
+		log.Printf("[Update, FindById] with error detail %v", err.Error())
 		return comment, err
 	}
 
@@ -109,6 +119,7 @@ func (u *commentUsecase) Update(ctx context.Context, payload request.CommentRequ
 
 	updatedComment, err := u.commentRepository.Update(ctx, *comment, id)
 	if err != nil {
+		log.Printf("[Update, Update] with error detail %v", err.Error())
 		return updatedComment, err
 	}
 

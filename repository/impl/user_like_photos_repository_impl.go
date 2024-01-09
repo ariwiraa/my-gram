@@ -3,7 +3,10 @@ package impl
 import (
 	"context"
 	"errors"
+	"log"
+
 	"github.com/ariwiraa/my-gram/domain"
+	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/repository"
 	"gorm.io/gorm"
 )
@@ -16,7 +19,11 @@ func (r *userLikesPhotoRepository) FindUserWhoLiked(ctx context.Context, userId 
 	var user domain.User
 	err := r.db.WithContext(ctx).Preload("LikedPhotos").Where("id = ?", userId).First(&user).Error
 	if err != nil {
-		return &user, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &user, helpers.ErrUserNotFound
+		}
+		log.Printf("[FindUserWhoLiked] with error detail %v", err.Error())
+		return &user, helpers.ErrRepository
 	}
 
 	return &user, nil
@@ -26,7 +33,11 @@ func (r *userLikesPhotoRepository) FindPhotoWhoLiked(ctx context.Context, photoI
 	var photo domain.Photo
 	err := r.db.WithContext(ctx).Preload("LikedBy").Where("id = ?", photoId).First(&photo).Error
 	if err != nil {
-		return &photo, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &photo, helpers.ErrPhotoNotFound
+		}
+		log.Printf("[FindPhotoWhoLiked] with error detail %v", err.Error())
+		return &photo, helpers.ErrRepository
 	}
 
 	return &photo, err
@@ -37,7 +48,11 @@ func (r *userLikesPhotoRepository) CountUsersWhoLikedPhotoByPhotoId(ctx context.
 	var totalLikes int64
 	err := r.db.WithContext(ctx).Model(&domain.UserLikesPhoto{}).Where("photo_id = ?", photoId).Count(&totalLikes).Error
 	if err != nil {
-		return 0, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return totalLikes, helpers.ErrPhotoNotFound
+		}
+		log.Printf("[FindUserWhoLiked] with error detail %v", err.Error())
+		return totalLikes, helpers.ErrRepository
 	}
 
 	return totalLikes, nil
@@ -49,6 +64,10 @@ func (r *userLikesPhotoRepository) DeleteLike(ctx context.Context, photoId strin
 
 	err := r.db.WithContext(ctx).Where("photo_id = ? AND user_id = ?", photoId, userId).Delete(&userLikesPhoto).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return
+		}
+		log.Printf("[Delete] with error detail %v", err.Error())
 		return
 	}
 }
@@ -57,7 +76,8 @@ func (r *userLikesPhotoRepository) DeleteLike(ctx context.Context, photoId strin
 func (r *userLikesPhotoRepository) InsertLike(ctx context.Context, userLikesPhoto domain.UserLikesPhoto) error {
 	err := r.db.WithContext(ctx).Create(&userLikesPhoto).Error
 	if err != nil {
-		return err
+		log.Printf("[InsertLike] with error detail %v", err.Error())
+		return helpers.ErrRepository
 	}
 
 	return nil
