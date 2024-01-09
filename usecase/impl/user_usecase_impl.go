@@ -2,12 +2,12 @@ package impl
 
 import (
 	"context"
-	"fmt"
+	"log"
+	"time"
+
 	"github.com/ariwiraa/my-gram/domain/dtos/response"
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/usecase"
-	"log"
-	"time"
 )
 
 type userUsecaseImpl struct {
@@ -23,27 +23,27 @@ func (u *userUsecaseImpl) GetUserProfileByUsername(ctx context.Context, username
 	log.Printf("Fetching user profile for username: %s", username)
 	user, err := u.userRepository.FindByUsername(ctx, username)
 	if err != nil {
-		log.Printf("Error fetching user by username: %v", err)
-		return nil, fmt.Errorf("failed to find user by username: %w", err)
+		log.Printf("[GetUserProfileByUsername, FindByUsername] with error detail %v", err.Error())
+		return nil, err
 	}
 
 	// TODO: Terapkan goroutine dan channel
 	follower, err := u.followRepository.CountFollowerByUserId(ctx, user.ID)
 	if err != nil {
-		log.Printf("Error counting followers: %v", err)
-		return nil, fmt.Errorf("failed to count followers: %w", err)
+		log.Printf("[GetUserProfileByUsername, CountFollowerByUserId] with error detail %v", err.Error())
+		return nil, err
 	}
 
 	following, err := u.followRepository.CountFollowingByUserId(ctx, user.ID)
 	if err != nil {
-		log.Printf("Error counting following: %v", err)
-		return nil, fmt.Errorf("failed to count following: %w", err)
+		log.Printf("[GetUserProfileByUsername, CountFollowingByUserId] with error detail %v", err.Error())
+		return nil, err
 	}
 
 	totalPosts, err := u.photoRepository.CountPhotoByUserId(ctx, user.ID)
 	if err != nil {
-		log.Printf("Error counting total posts: %v", err)
-		return nil, fmt.Errorf("failed to count total posts: %w", err)
+		log.Printf("[GetUserProfileByUsername, CountPhotoByUserId] with error detail %v", err.Error())
+		return nil, err
 	}
 
 	log.Println("User profile fetched successfully")

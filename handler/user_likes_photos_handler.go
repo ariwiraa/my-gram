@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/ariwiraa/my-gram/helpers"
@@ -27,11 +28,25 @@ func (h *userLikesPhotosHandler) GetPhotosLikedHandler(ctx *gin.Context) {
 
 	likes, err := h.likesUsecase.GetPhotosLikedByUserId(ctx.Request.Context(), userId)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[GetPhotosLikedHandler, GetPhotosLikedByUserId] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, likes)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("get photos liked success"),
+		helpers.WithPayload(likes),
+	).Send(ctx)
 }
 
 func (h *userLikesPhotosHandler) GetUsersWhoLikedPhotosHandler(ctx *gin.Context) {
@@ -39,11 +54,25 @@ func (h *userLikesPhotosHandler) GetUsersWhoLikedPhotosHandler(ctx *gin.Context)
 
 	users, err := h.likesUsecase.GetUsersWhoLikedPhotoByPhotoId(ctx.Request.Context(), photoId)
 	if err != nil {
-		helpers.FailResponse(ctx, 400, err.Error())
+		log.Printf("[GetUsersWhoLikedPhotosHandler, GetUsersWhoLikedPhotoByPhotoId] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
-	helpers.SuccessResponse(ctx, 200, users)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("get users who liked photo success"),
+		helpers.WithPayload(users),
+	).Send(ctx)
 }
 
 // LikePhoto godoc

@@ -1,9 +1,11 @@
 package handler
 
 import (
-	"github.com/ariwiraa/my-gram/domain/dtos/request"
+	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/ariwiraa/my-gram/domain/dtos/request"
 
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/usecase"
@@ -45,7 +47,10 @@ func (h *commentHandler) DeleteCommentHandler(ctx *gin.Context) {
 	commentId, _ := strconv.Atoi(requestParam)
 
 	h.commentUsecase.Delete(ctx.Request.Context(), uint(commentId), photoId)
-	helpers.SuccessResponse(ctx, http.StatusOK, nil)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("delete comment success"),
+	).Send(ctx)
 }
 
 // GetComment godoc
@@ -68,10 +73,25 @@ func (h *commentHandler) GetCommentHandler(ctx *gin.Context) {
 
 	comment, err := h.commentUsecase.GetById(ctx.Request.Context(), uint(commentId), photoId)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[GetCommentHandler, GetById] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
+		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, comment)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("get comment success"),
+		helpers.WithPayload(comment),
+	).Send(ctx)
 
 }
 
@@ -91,11 +111,28 @@ func (h *commentHandler) GetCommentsHandler(ctx *gin.Context) {
 	photoId := ctx.Param("id")
 
 	comments, err := h.commentUsecase.GetAllCommentsByPhotoId(ctx.Request.Context(), photoId)
+
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[GetCommentsHandler, GetAllCommentsByPhotoId] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
+		return
+
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, comments)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("get all comments success"),
+		helpers.WithPayload(comments),
+	).Send(ctx)
 }
 
 // CreateComment godoc
@@ -123,24 +160,56 @@ func (h *commentHandler) PostCommentHandler(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[PostCommentHandler, ShouldBindJSON] with error detail %v", err.Error())
+		myErr := helpers.ErrorGeneral
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusInternalServerError),
+		).Send(ctx)
 		return
 	}
 
 	err = h.validate.Struct(payload)
 	if err != nil {
+		log.Printf("[PostCommentHandler, Struct] with error detail %v", err.Error())
 		errorMessage := helpers.FormatValidationErrors(err)
-		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
+
+		myErr, ok := helpers.ErrorMapping[errorMessage.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(errorMessage.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusBadRequest),
+		).Send(ctx)
 		return
 	}
 
 	comment, err := h.commentUsecase.Create(ctx.Request.Context(), payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[PostCommentHandler, Create] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, comment)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusCreated),
+		helpers.WithMessage("create comment success"),
+		helpers.WithPayload(comment),
+	).Send(ctx)
 
 }
 
@@ -173,24 +242,56 @@ func (h *commentHandler) PutCommentHandler(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[PutCommentHandler, ShouldBindJSON] with error detail %v", err.Error())
+		myErr := helpers.ErrorGeneral
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusInternalServerError),
+		).Send(ctx)
 		return
 	}
 
 	err = h.validate.Struct(payload)
 	if err != nil {
+		log.Printf("[PuttCommentHandler, Struct] with error detail %v", err.Error())
 		errorMessage := helpers.FormatValidationErrors(err)
-		helpers.FailResponse(ctx, http.StatusBadRequest, errorMessage)
+
+		myErr, ok := helpers.ErrorMapping[errorMessage.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(errorMessage.Error()),
+			helpers.WithError(myErr),
+			helpers.WithHttpCode(http.StatusBadRequest),
+		).Send(ctx)
 		return
 	}
 
 	comment, err := h.commentUsecase.Update(ctx.Request.Context(), payload, uint(commentId))
 	if err != nil {
-		helpers.FailResponse(ctx, http.StatusBadRequest, err.Error())
+		log.Printf("[PutCommentHandler, Update] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
 		return
 	}
 
-	helpers.SuccessResponse(ctx, http.StatusOK, comment)
+	helpers.NewResponse(
+		helpers.WithHttpCode(http.StatusOK),
+		helpers.WithMessage("update comment success"),
+		helpers.WithPayload(comment),
+	).Send(ctx)
 
 }
 
