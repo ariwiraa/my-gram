@@ -35,6 +35,10 @@ var (
 
 	ErrCommentMessageRequired = errors.New("message is required")
 
+	ErrHeaderNotProvide  = errors.New("headers not provide")
+	ErrInvalidHeaderType = errors.New("invalid header type")
+	ErrTokenNotVerified  = errors.New("token not verified")
+
 	// general
 	ErrFailedSendEmail = errors.New("failed send email")
 	ErrRepository      = errors.New("error repository")
@@ -91,8 +95,11 @@ var (
 	ErrorTagNotFound          = NewError(ErrTagNotFound.Error(), "40406", http.StatusNotFound)
 
 	// unauthorized
-	ErrorPasswordNotMatch = NewError(ErrPasswordNotMatch.Error(), "40101", http.StatusUnauthorized)
-	ErrorEmailNotVerified = NewError(ErrEmailNotVerified.Error(), "40102", http.StatusUnauthorized)
+	ErrorPasswordNotMatch  = NewError(ErrPasswordNotMatch.Error(), "40101", http.StatusUnauthorized)
+	ErrorEmailNotVerified  = NewError(ErrEmailNotVerified.Error(), "40102", http.StatusUnauthorized)
+	ErrorHeaderNotProvide  = NewError(ErrHeaderNotProvide.Error(), "40103", http.StatusUnauthorized)
+	ErrorInvalidHeaderType = NewError(ErrInvalidHeaderType.Error(), "40104", http.StatusUnauthorized)
+	ErrorTokenNotVerified  = NewError(ErrTokenNotVerified.Error(), "40105", http.StatusUnauthorized)
 
 	// internal server error
 	ErrorRepository      = NewError(ErrRepository.Error(), "50001", http.StatusInternalServerError)
@@ -122,5 +129,8 @@ var (
 		ErrCommentNotFound.Error():        ErrorCommentNotFound,
 		ErrTagNotFound.Error():            ErrorTagNotFound,
 		ErrFileNotSupported.Error():       ErrorFileNotSupported,
+		ErrHeaderNotProvide.Error():       ErrorHeaderNotProvide,
+		ErrInvalidHeaderType.Error():      ErrorInvalidHeaderType,
+		ErrTokenNotVerified.Error():       ErrorTokenNotVerified,
 	}
 )
