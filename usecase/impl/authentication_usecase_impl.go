@@ -8,6 +8,7 @@ import (
 
 	"github.com/ariwiraa/my-gram/domain"
 	"github.com/ariwiraa/my-gram/domain/dtos/request"
+	"github.com/ariwiraa/my-gram/domain/dtos/response"
 	"github.com/ariwiraa/my-gram/helpers"
 	"github.com/ariwiraa/my-gram/repository"
 	"github.com/ariwiraa/my-gram/usecase"
@@ -162,27 +163,32 @@ func (u *authenticationUsecaseImpl) Register(ctx context.Context, payload reques
 	return &newUser, nil
 }
 
-func (u *authenticationUsecaseImpl) Login(ctx context.Context, payload request.UserLogin) (*domain.User, error) {
+func (u *authenticationUsecaseImpl) Login(ctx context.Context, payload request.UserLogin) (*response.LoginResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	user, err := u.userRepository.FindByUsername(ctx, payload.Username)
 	if err != nil {
 		log.Printf("[Login, FindByUsername] with error detail %v", err.Error())
-		return &user, err
+		return &response.LoginResponse{}, err
 	}
 
 	if user.EmailVerificationAt == nil {
-		return &user, helpers.ErrEmailNotVerified
+		return &response.LoginResponse{}, helpers.ErrEmailNotVerified
 	}
 
 	comparePassword := helpers.ComparePass([]byte(user.Password), []byte(payload.Password))
 	if !comparePassword {
 		log.Printf("[Login, ComparePass] with error detail %v", err.Error())
-		return &user, helpers.ErrPasswordNotMatch
+		return &response.LoginResponse{}, helpers.ErrPasswordNotMatch
 	}
 
-	return &user, nil
+	loginResponse := response.LoginResponse{
+		AccessToken:  helpers.NewAccessToken(uint64(user.ID)).GenerateAccessToken(),
+		RefreshToken: helpers.NewRefreshToken(uint64(user.ID)).GenerateRefreshToken(),
+	}
+
+	return &loginResponse, nil
 }
 
 // Add implements usecase.AuthenticationUsecase.

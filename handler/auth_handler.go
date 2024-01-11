@@ -208,7 +208,7 @@ func (h *authHandler) PostUserLoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	loggedInUser, err := h.authUsecase.Login(ctx.Request.Context(), payload)
+	loginResponse, err := h.authUsecase.Login(ctx.Request.Context(), payload)
 	if err != nil {
 		myErr, ok := helpers.ErrorMapping[err.Error()]
 
@@ -223,10 +223,7 @@ func (h *authHandler) PostUserLoginHandler(ctx *gin.Context) {
 		return
 	}
 
-	accessToken := helpers.NewAccessToken(uint64(loggedInUser.ID)).GenerateAccessToken()
-	refreshToken := helpers.NewRefreshToken(uint64(loggedInUser.ID)).GenerateRefreshToken()
-
-	err = h.authUsecase.Add(ctx.Request.Context(), refreshToken)
+	err = h.authUsecase.Add(ctx.Request.Context(), loginResponse.RefreshToken)
 	if err != nil {
 		return
 	}
@@ -234,10 +231,7 @@ func (h *authHandler) PostUserLoginHandler(ctx *gin.Context) {
 	helpers.NewResponse(
 		helpers.WithHttpCode(http.StatusOK),
 		helpers.WithMessage("login success"),
-		helpers.WithPayload(gin.H{
-			"access_token":  accessToken,
-			"refresh_token": refreshToken,
-		}),
+		helpers.WithPayload(loginResponse),
 	).Send(ctx)
 
 }
