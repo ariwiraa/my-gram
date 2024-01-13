@@ -87,15 +87,17 @@ func (r *photoRepository) Create(ctx context.Context, photo domain.Photo) (domai
 }
 
 // Delete implements PhotoRepository
-func (r *photoRepository) Delete(ctx context.Context, photo domain.Photo) {
+func (r *photoRepository) Delete(ctx context.Context, photo domain.Photo) error {
 	err := r.db.WithContext(ctx).Where("id = ?", photo.ID).Delete(&photo).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return
+			return helpers.ErrPhotoNotFound
 		}
 		log.Printf("[IsPhotoExist] with error detail %v", err.Error())
-		return
+		return helpers.ErrRepository
 	}
+
+	return nil
 }
 
 // FindAll implements PhotoRepository
@@ -116,7 +118,7 @@ func (r *photoRepository) FindById(ctx context.Context, id string) (domain.Photo
 	err := r.db.WithContext(ctx).Preload("User").Preload("Comments").First(&photo, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return photo, helpers.ErrPhotoNotFound
+			return photo, err
 		}
 		log.Printf("[FindById] with error detail %v", err.Error())
 		return photo, helpers.ErrRepository

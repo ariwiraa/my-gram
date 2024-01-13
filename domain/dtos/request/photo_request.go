@@ -1,14 +1,12 @@
 package request
 
-import "mime/multipart"
-
 type PhotoRequest struct {
-	Caption  string                `form:"caption"`
-	PhotoUrl *multipart.FileHeader `form:"photo_url" binding:"required"`
-	Tags     []string              `form:"tags" `
+	Caption  string   `json:"caption"`
+	PhotoUrl string   `json:"photo_url"`
+	Tags     []string `json:"tags"`
 }
 
 type UpdatePhotoRequest struct {
-	Caption string   `form:"caption"`
-	Tags    []string `form:"tags"`
+	Caption string   `json:"caption"`
+	Tags    []string `json:"tags"`
 }

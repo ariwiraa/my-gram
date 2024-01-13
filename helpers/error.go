@@ -32,6 +32,7 @@ var (
 	ErrCommentNotFound       = errors.New("comment not found")
 	ErrTagNotFound           = errors.New("tag not found")
 	ErrFileNotSupported      = errors.New("file not supported")
+	errFileSizeNotValid      = errors.New("maximal file size is 2 MB")
 
 	ErrCommentMessageRequired = errors.New("message is required")
 
@@ -81,6 +82,7 @@ var (
 	ErrorCommentMessageRequired = NewError(ErrCommentMessageRequired.Error(), "40007", http.StatusBadRequest)
 	ErrorLinkExpired            = NewError(ErrLinkExpired.Error(), "40008", http.StatusBadRequest)
 	ErrorFileNotSupported       = NewError(ErrFileNotSupported.Error(), "40009", http.StatusBadRequest)
+	ErrorFileSizeNotValid       = NewError(errFileSizeNotValid.Error(), "40410", http.StatusBadRequest)
 
 	// conflict
 	ErrorEmailAlreadyUsed    = NewError(ErrEmailAlreadyUserd.Error(), "40901", http.StatusConflict)
@@ -132,5 +134,6 @@ var (
 		ErrHeaderNotProvide.Error():       ErrorHeaderNotProvide,
 		ErrInvalidHeaderType.Error():      ErrorInvalidHeaderType,
 		ErrTokenNotVerified.Error():       ErrorTokenNotVerified,
+		errFileSizeNotValid.Error():       ErrorFileSizeNotValid,
 	}
 )

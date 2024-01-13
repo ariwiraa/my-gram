@@ -12,12 +12,13 @@ import (
 )
 
 type RouterHandler struct {
-	AuthHandler    handler.AuthHandler
-	PhotoHandler   handler.PhotoHandler
-	CommentHandler handler.CommentHandler
-	LikesHandler   handler.UserLikesPhotosHandler
-	FollowsHandler handler.FollowHandler
-	UserHandler    handler.UserHandler
+	AuthHandler       handler.AuthHandler
+	PhotoHandler      handler.PhotoHandler
+	CommentHandler    handler.CommentHandler
+	LikesHandler      handler.UserLikesPhotosHandler
+	FollowsHandler    handler.FollowHandler
+	UserHandler       handler.UserHandler
+	UploadFileHandler handler.UploadFileHandler
 }
 
 // @title Mygram
@@ -42,6 +43,7 @@ func NewRouter(routerHandler RouterHandler) *gin.Engine {
 	router.POST("/signin", routerHandler.AuthHandler.PostUserLoginHandler)
 	router.PUT("/refresh", routerHandler.AuthHandler.PutAccessTokenHandler)
 	router.DELETE("/signout", middlewares.Authentication(), routerHandler.AuthHandler.LogoutHandler)
+	router.POST("/files/upload", middlewares.Authentication(), routerHandler.UploadFileHandler.UploadFileHandler)
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	photo := router.Group("/photos")
