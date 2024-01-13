@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	Server   server
-	Database database
-	JWT      jwtEnvironment
-	Redis    RedisConfig
+	Server     server
+	Database   database
+	JWT        jwtEnvironment
+	Redis      RedisConfig
+	Cloudinary CloudinaryConfig
 }
 
 type server struct {
@@ -47,6 +48,11 @@ func InitializeConfig() *Config {
 			Host:     os.Getenv("REDIS_HOST"),
 			Port:     os.Getenv("REDIS_PORT"),
 			Password: os.Getenv("REDIS_PASSWORD"),
+		},
+		CloudinaryConfig{
+			Name:      os.Getenv("CLOUDINARY_NAME"),
+			APIKey:    os.Getenv("CLOUDINARY_API_KEY"),
+			APISecret: os.Getenv("CLOUDINARY_API_SECRET"),
 		},
 	}
 

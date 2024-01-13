@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -46,7 +45,21 @@ func (h *photoHandler) DeletePhotoHandler(ctx *gin.Context) {
 
 	photoId := ctx.Param("id")
 
-	h.photoUsecase.Delete(ctx.Request.Context(), photoId)
+	err := h.photoUsecase.Delete(ctx.Request.Context(), photoId)
+	if err != nil {
+		log.Printf("[DeletePhotoHandler, DeleteById] with error detail %v", err.Error())
+		myErr, ok := helpers.ErrorMapping[err.Error()]
+
+		if !ok {
+			myErr = helpers.ErrorGeneral
+		}
+
+		helpers.NewResponse(
+			helpers.WithMessage(err.Error()),
+			helpers.WithError(myErr),
+		).Send(ctx)
+		return
+	}
 	helpers.NewResponse(
 		helpers.WithHttpCode(http.StatusOK),
 		helpers.WithMessage("delete photo success"),
@@ -191,9 +204,9 @@ func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
 	userID := uint(userData["Id"].(float64))
 
 	// ambil data dari formdata
-	err := ctx.ShouldBindWith(&payload, binding.FormMultipart)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		log.Printf("[PostPhotoHandler, ShouldBindWith] with error detail %v", err.Error())
+		log.Printf("[PostPhotoHandler, ShouldBindJSON] with error detail %v", err.Error())
 		myErr := helpers.ErrorGeneral
 		helpers.NewResponse(
 			helpers.WithMessage(err.Error()),
@@ -222,46 +235,7 @@ func (h *photoHandler) PostPhotoHandler(ctx *gin.Context) {
 		return
 	}
 
-	file, _ := payload.PhotoUrl.Open()
-	defer file.Close()
-
-	fileSupported, err := helpers.IsImageFile(file)
-	if err != nil || !fileSupported {
-
-		log.Printf("[PostPhotoHandler, IsImageFile] with error detail %v", err.Error())
-		errorMessage := helpers.FormatValidationErrors(err)
-
-		myErr, ok := helpers.ErrorMapping[errorMessage.Error()]
-
-		if !ok {
-			myErr = helpers.ErrorGeneral
-		}
-
-		helpers.NewResponse(
-			helpers.WithMessage(errorMessage.Error()),
-			helpers.WithError(myErr),
-			helpers.WithHttpCode(http.StatusBadRequest),
-		).Send(ctx)
-		return
-
-	}
-
-	//tentukan destinasi penyimpanan file
-	path := fmt.Sprintf("images/%d-%s", userID, payload.PhotoUrl.Filename)
-
-	//save file yang diupload
-	err = ctx.SaveUploadedFile(payload.PhotoUrl, path)
-	if err != nil {
-
-		helpers.NewResponse(
-			helpers.WithMessage("Error when uploaded file"),
-			helpers.WithError(err),
-			helpers.WithHttpCode(http.StatusInternalServerError),
-		).Send(ctx)
-		return
-	}
-
-	photo, err := h.photoUsecase.Create(ctx.Request.Context(), payload, userID, path)
+	photo, err := h.photoUsecase.Create(ctx.Request.Context(), payload, userID)
 	if err != nil {
 		log.Printf("[PostPhotoHandler, Create] with error detail %v", err.Error())
 		myErr, ok := helpers.ErrorMapping[err.Error()]

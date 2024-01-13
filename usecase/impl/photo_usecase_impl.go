@@ -20,17 +20,37 @@ type photoUsecase struct {
 	photoTagsRepository      repository.PhotoTagsRepository
 	userLikesPhotoRepository repository.UserLikesPhotoRepository
 	userRepository           repository.UserRepository
+	cloudinary               usecase.CloudinaryUsecase
+}
+
+func NewPhotoUsecase(photo repository.PhotoRepository,
+	comment repository.CommentRepository,
+	tag repository.TagRepository,
+	photoTags repository.PhotoTagsRepository,
+	userLikesPhotoRepository repository.UserLikesPhotoRepository,
+	userRepository repository.UserRepository,
+	cloudinary usecase.CloudinaryUsecase,
+) usecase.PhotoUsecase {
+	return &photoUsecase{
+		photoRepository:          photo,
+		commentRepository:        comment,
+		tagRepository:            tag,
+		photoTagsRepository:      photoTags,
+		userLikesPhotoRepository: userLikesPhotoRepository,
+		userRepository:           userRepository,
+		cloudinary:               cloudinary,
+	}
 }
 
 // Create implements PhotoUsecase
-func (u *photoUsecase) Create(ctx context.Context, payload request.PhotoRequest, userId uint, fileLocation string) (*response.PhotoResponse, error) {
+func (u *photoUsecase) Create(ctx context.Context, payload request.PhotoRequest, userId uint) (*response.PhotoResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	photo := domain.Photo{
 		ID:       uuid.NewString(),
 		Caption:  payload.Caption,
-		PhotoUrl: fileLocation,
+		PhotoUrl: payload.PhotoUrl,
 		UserId:   userId,
 	}
 
@@ -80,22 +100,34 @@ func (u *photoUsecase) Create(ctx context.Context, payload request.PhotoRequest,
 }
 
 // Delete implements PhotoUsecase
-func (u *photoUsecase) Delete(ctx context.Context, id string) {
+func (u *photoUsecase) Delete(ctx context.Context, id string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	photo, err := u.photoRepository.FindById(ctx, id)
 	if err != nil {
 		log.Printf("[Delete, FindById] with error detail %v", err.Error())
-		return
+		return err
 	}
 
-	u.photoRepository.Delete(ctx, photo)
+	err = u.cloudinary.Remove(ctx, photo.PhotoUrl, photo.User.ID)
+	if err != nil {
+		log.Printf("[Delete, Remove] with error detail %v", err.Error())
+		return err
+	}
+
 	err = u.photoTagsRepository.Delete(ctx, photo.ID)
 	if err != nil {
 		log.Printf("[Delete, Delete] with error detail %v", err.Error())
-		return
+		return err
 	}
+
+	err = u.photoRepository.Delete(ctx, photo)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetAll implements PhotoUsecase
@@ -322,21 +354,5 @@ func (u *photoUsecase) processPhotoTags(ctx context.Context, photoTags []domain.
 		}
 
 		responsePhoto.PhotoTags = append(responsePhoto.PhotoTags, tag.Name)
-	}
-}
-
-func NewPhotoUsecase(photo repository.PhotoRepository,
-	comment repository.CommentRepository,
-	tag repository.TagRepository,
-	photoTags repository.PhotoTagsRepository,
-	userLikesPhotoRepository repository.UserLikesPhotoRepository,
-	userRepository repository.UserRepository) usecase.PhotoUsecase {
-	return &photoUsecase{
-		photoRepository:          photo,
-		commentRepository:        comment,
-		tagRepository:            tag,
-		photoTagsRepository:      photoTags,
-		userLikesPhotoRepository: userLikesPhotoRepository,
-		userRepository:           userRepository,
 	}
 }
